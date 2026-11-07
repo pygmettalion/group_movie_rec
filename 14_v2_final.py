@@ -1,10 +1,10 @@
-"""[2차 버전] 최종 채점.
+"""[version 2] Final scoring.
 
-(가) 새 시험지(FRESH_HOLDOUT, 봉인된 500그룹): 1차 고정 모델 vs 2차 고정 모델 -> 공정한 비교 (주 결과)
-(나) 기존 Internal / External / Beliefs: 2차 모델 점수 (참고용. 1차 결과를 본 뒤 만든 모델이라 '보조 결과'로만 보고)
+(a) fresh holdout (FRESH_HOLDOUT, 500 sealed groups): v1 frozen model vs v2 frozen model -> fair comparison (main result)
+(b) the existing Internal / External / Beliefs: v2 model scores (reference only; this model was built after seeing v1 results, so it is reported as a 'secondary result')
 
-'Strong Dislike' 기준(percentile)이 1차와 2차에서 다를 수 있으므로, Strong Dislike 발생률은 두 기준 모두로 계산해서 같은 잣대로 비교한다.
-실행: python 14_v2_final.py   (results_v1_frozen 과 results_v2 를 읽는다)
+The Strong Dislike threshold (percentile) may differ between v1 and v2, so the Strong Dislike rate is computed under both thresholds and compared on the same yardstick.
+Run: python 14_v2_final.py   (reads results_v1_frozen and results_v2)
 """
 import json
 import pickle
@@ -54,7 +54,7 @@ def risk_of(name, pred, users, movies, th):
 
 
 def ml_cases(name, group_list, eval_p):
-    """eval_p: Strong Dislike 판정 기준 percentile (채점 잣대). 모델 내부 위험 계산은 각 버전 자기 percentile."""
+    """eval_p: the percentile used to judge Strong Dislike (the scoring yardstick). Inside each model, risk is computed with that version's own percentile."""
     out = []
     for gid, users, movies in group_list:
         pred = np.column_stack([V[name]["s1"].predict([u] * len(movies), movies) for u in users])
@@ -77,7 +77,7 @@ def report(cases_by_version, tag):
     return tab, per
 
 
-# ================================================================ (가) 새 시험지
+# ================================================================ (a) fresh holdout
 fresh = pd.read_csv(OUT / "FRESH_HOLDOUT_groups.csv")
 fresh_list = group_rows(fresh, "test")
 results = {}
@@ -97,13 +97,13 @@ for eval_p in PS:
         print(f"  {k}: " + ", ".join(f"{m} {d['diff']:+.4f} [{d['lo']:+.4f},{d['hi']:+.4f}]" for m, d in v.items()))
     pd.concat([df.assign(version=k[0]) for k, df in per.items()]).to_csv(OUT / f"FRESH_per_group_p{eval_p}.csv", index=False)
 
-# 개인 예측 정확도 (Test 기간 평점 전체)
+# individual prediction accuracy (all Test-period ratings)
 te_w = te[te.user_id.isin(trva.user_id) & te.movie_id.isin(trva.movie_id)]
 indiv = {name: rmse(te_w.rating_norm, V[name]["s1"].predict(te_w.user_id.values, te_w.movie_id.values)) * 4 for name in V}
 print("\n[Test 기간 개인 예측 RMSE, 별점]", {k: round(v, 4) for k, v in indiv.items()})
 results["test_individual_rmse_stars"] = indiv
 
-# ================================================================ (나) 기존 시험지 (2차, 참고용)
+# ================================================================ (b) existing test sets (v2, reference only)
 p2 = V["v2"]["p"]
 int_tab, int_per = report({"v2": ml_cases("v2", group_rows(groups, "test"), p2)}, "internal")
 print("\n[참고] 기존 Internal 49그룹 (2차)\n", int_tab.round(4).to_string(index=False))

@@ -1,9 +1,9 @@
-"""[2차 버전] Strong Dislike 위험 모델 피처 추가.
+"""[version 2] Additional features for the Strong Dislike risk model.
 
-1차 피처(개인 예측 점수, 불호 기준선, 거리, Strong Dislike 빈도, 영화 과거 평점 통계)에 더해
-  - meta : 평론가 점수(+없음 표시), 개봉 연도, 감독 효과      -> "평론가가 혹평한 영화는 누군가 강하게 싫어하기 쉽다?"
-  - gd   : 그 사람의 '이 영화 장르에서의 과거 Strong Dislike 비율'       -> "공포 영화만 나오면 1점 주는 사람"
-모두 예측 시점 이전 기록(hist)만으로 계산한다.
+On top of the v1 features (individual predicted score, Strong Dislike threshold, distance, Strong Dislike frequency, the movie's past rating statistics)
+  - meta : critic score (+ missing flag), release year, director effect      -> "is a movie panned by critics more likely to be strongly disliked by someone?"
+  - gd   : the person's 'past Strong Dislike rate in this movie's genres'    -> "someone who gives 1 star to every horror movie"
+All are computed only from history before the prediction time (hist).
 """
 import numpy as np
 
@@ -22,9 +22,9 @@ INDIV_V2_SETS = {
 
 class RiskContext:
     def __init__(self, gd_hist, thr, genre_lookup, alpha, item_hist, kappa):
-        """gd_hist: 그 사용자들의 예측 시점 이전 평점(genres 열 포함) -> 장르별 Strong Dislike 비율
-        item_hist: 영화 정보(감독 효과)를 계산할 MovieLens 과거 평점, thr: user->불호 기준선,
-        genre_lookup: movie->장르 문자열(MovieLens 표기)."""
+        """gd_hist: those users' ratings before the prediction time (including a genres column) -> Strong Dislike rate by genre
+        item_hist: MovieLens past ratings used to compute movie information (director effect), thr: user -> Strong Dislike threshold,
+        genre_lookup: movie -> genre string (MovieLens notation)."""
         self.items = risk_item_table(item_hist, kappa)
         self.gdis = user_genre_dislike(gd_hist, thr, alpha)
         self.genre_lookup = genre_lookup
@@ -50,7 +50,7 @@ def indiv_features_v2(pred, thr, share, movie_ids, user_ids, mstats, ctx, item_t
 
 
 def risk_proba_v2(risk, pred, thr, share, movie_ids, users, mstats, ctx, item_table=None):
-    """pred/thr/share: (후보수, 4). users: 4명. 개인 확률 p_i -> 1 - prod(1 - p_i)."""
+    """pred/thr/share: (number of candidates, 4). users: the 4 users. individual probabilities p_i -> 1 - prod(1 - p_i)."""
     cols = []
     for j in range(pred.shape[1]):
         X = indiv_features_v2(pred[:, j], thr[:, j], share[:, j], movie_ids, [users[j]] * len(movie_ids),

@@ -1,16 +1,16 @@
-"""2차 버전: 영화 메타데이터 붙이기 (제목, 개봉 연도, 감독, 평론가 점수).
+"""Version 2: attach movie metadata (title, release year, director, critic score).
 
-입력 (data_extra/ 폴더)
-  - ml-1m/movies.dat                   : 제목 + 개봉 연도 (MovieLens 1M 영화 전부)
-  - ml-latest-small/links.csv          : MovieLens 번호 -> IMDb 번호
-  - title_crew_tsv.gz                  : IMDb 번호 -> 감독 번호 (IMDb 공식 데이터)
-  - Rotten Tomatoes Movies.csv         : 평론가 점수(tomatometer), 감독 이름, 개봉일  (제목+연도로 짝 맞춤)
+Inputs (data_extra/ folder)
+  - ml-1m/movies.dat                   : title + release year (all MovieLens 1M movies)
+  - ml-latest-small/links.csv          : MovieLens id -> IMDb id
+  - title_crew_tsv.gz                  : IMDb id -> director id (official IMDb data)
+  - Rotten Tomatoes Movies.csv         : critic score (tomatometer), director name, release date  (matched by title + year)
 
-시간 원칙 (미래 정보 금지)
-  모델은 2000년 시점에서 추천하는 상황이다. 그 시점에 알 수 있던 정보만 쓴다.
-  - 개봉 연도, 감독: 영화가 나올 때 정해진 정보 -> 사용
-  - 평론가 점수: 대부분 개봉 무렵 쓰인 리뷰 -> 사용 (단, 나중에 추가된 리뷰도 일부 섞임: 보고서에 한계로 기록)
-  - 관객 점수(audience_rating): 2000~2020년 일반 관객이 매긴 점수 = 시험 기간 이후 정보 -> 사용하지 않음
+Time principle (no future information)
+  The model recommends as of the year 2000. Only information available at that time is used.
+  - release year, director: fixed when the movie came out -> used
+  - critic score: mostly reviews written around release -> used (some later reviews are mixed in: noted as a limitation in the report)
+  - audience score (audience_rating): rated by general audiences in 2000~2020 = information after the test period -> not used
 """
 import gzip
 import re
@@ -34,7 +34,7 @@ ARTICLES = r"(The|A|An|Les|La|Le|L'|Il|Das|Der|Die|El|Los|Las|Lo|I)"
 
 
 def _title_variants(title):
-    """'Matrix, The (1999)' -> ['the matrix'], 다른 언어 제목 (괄호 안)도 후보로."""
+    """'Matrix, The (1999)' -> ['the matrix']; titles in other languages (in parentheses) are also candidates."""
     m = re.match(r"^(.*?)\s*\((\d{4})\)\s*$", title)
     base, year = m.group(1), int(m.group(2))
     names = [re.sub(r"\s*\([^)]*\)", "", base).strip()] + re.findall(r"\(([^)]*)\)", base)
@@ -56,7 +56,7 @@ def load_movies():
 
 
 def match_rotten_tomatoes(mv):
-    """제목(정규화) + 개봉 연도(±1년)로 짝 맞춤. 여러 개면 연도 차이가 가장 작은 것."""
+    """Match by normalized title + release year (+-1 year). If several match, take the smallest year difference."""
     rt = pd.read_csv(EXTRA / "Rotten Tomatoes Movies.csv")
     rt["y"] = pd.to_datetime(rt.in_theaters_date, errors="coerce").dt.year
     rt["k"] = rt.movie_title.map(_norm)
@@ -77,8 +77,8 @@ def match_rotten_tomatoes(mv):
             if best:
                 break
         if best is None:
-            # 2단계(느슨한 짝): 같은 해 영화 중 (±1년이면 'The Fear(1995)'↔'Fear(1996)' 같은 오답이 생겨서 같은 해만) 단어가 많이 겹치는 것. 예: 'Star Trek: The Wrath of Khan'
-            #   <-> 'Star Trek II: The Wrath of Khan'. 단어 겹침 비율 0.75 이상 + 가장 높은 것 하나만.
+            # step 2 (loose match): among movies of the same year (+-1 year caused wrong matches like 'The Fear(1995)'<->'Fear(1996)', so same year only), the one with the most word overlap. e.g. 'Star Trek: The Wrath of Khan'
+            #   <-> 'Star Trek II: The Wrath of Khan'. Word-overlap ratio >= 0.75 and only the single highest.
             words = [set(n.split()) - {"the", "a", "an", "of"} for n in names]
             cands = []
             for i in by_year.get(year, []):
@@ -100,7 +100,7 @@ def match_rotten_tomatoes(mv):
 
 
 def load_directors(mv):
-    """links.csv(IMDb 번호) -> IMDb title.crew 의 감독. 필요한 영화만 읽는다(파일이 425MB)."""
+    """links.csv (IMDb id) -> directors from IMDb title.crew. Only the needed movies are read (the file is 425MB)."""
     links = pd.read_csv(EXTRA / "ml-latest-small" / "links.csv", dtype={"imdbId": str})
     links = links[links.movieId.isin(mv.movie_id)]
     want = {"tt" + i.zfill(7): m for m, i in zip(links.movieId, links.imdbId)}
@@ -121,7 +121,7 @@ def build_metadata():
     imdb_dir = load_directors(mv)
     meta = mv.merge(rt, on="movie_id", how="left")
     meta["directors"] = meta.movie_id.map(lambda m: imdb_dir.get(m))
-    # IMDb 에 없으면 RT 감독 이름을 쓴다 (이름 문자열 그대로 ID 처럼 사용)
+    # if missing in IMDb, use the RT director name (the name string itself is used like an ID)
     fill = meta.directors.isna() & meta.rt_directors.notna()
     meta.loc[fill, "directors"] = meta.loc[fill, "rt_directors"].map(lambda s: ["rt:" + x.strip() for x in str(s).split(",")])
     meta["director_source"] = np.where(meta.movie_id.isin(imdb_dir), "imdb", np.where(fill, "rt", "none"))

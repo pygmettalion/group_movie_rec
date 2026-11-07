@@ -1,8 +1,8 @@
-"""[3차] 최종 채점: 2번 새 시험지(FRESH_HOLDOUT2, 500그룹, 1번 시험지와 사람이 안 겹침)로 1·2·3차를 한 번씩.
+"""[version 3] Final scoring: v1, v2, v3 each scored once on fresh holdout 2 (FRESH_HOLDOUT2, 500 groups, no person shared with holdout 1).
 
-각 버전은 자기 고정 설정(results_v1_frozen / results_v2 / results_v3)을 그대로 쓴다.
-Strong Dislike 판정 잣대는 각 버전이 고른 percentile 들로 모두 계산해서 같은 잣대로 비교한다.
-실행: python 34_v3_final.py
+Each version uses its own frozen settings (results_v1_frozen / results_v2 / results_v3).
+The Strong Dislike yardstick is computed with every percentile chosen by the versions, so all are compared on the same yardstick.
+Run: python 34_v3_final.py
 """
 import json
 import pickle

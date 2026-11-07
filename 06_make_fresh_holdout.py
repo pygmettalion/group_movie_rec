@@ -1,12 +1,12 @@
-"""2차 버전용 '새 시험지(Fresh Holdout)' 만들기 — 정답은 보지 않고 봉인만 한다.
+"""Build a 'fresh holdout' (new test set) for version 2 — only seal it, never look at the answers.
 
-왜 필요한가?
-  1차 버전의 Internal/External Test 점수는 이미 봤다. 이후에 모델을 고치면 그 시험지로는 공정한 비교가 안 된다.
-  그래서 '아직 아무도 채점해 본 적 없는' 그룹을 Test 기간에서 새로 만들어 봉인한다.
-  - 공식 49그룹의 사용자 36명은 제외
-  - 조건은 공식 그룹과 같게: 4명이 Test 기간에 공통으로 본 영화 5편 이상, 각자 Train+Validation 기록 10개 이상
-  - 이 스크립트는 '누가 어떤 영화를 봤는지'만 보고, 별점(rating)은 열어 보지 않는다.
-  - 1차 버전과 2차 버전을 이 시험지로 '딱 한 번씩' 채점해서 비교한다.
+Why?
+  The Internal/External Test scores of version 1 have already been seen. If the model is changed afterwards, that test set no longer gives a fair comparison.
+  So new groups that 'nobody has ever scored' are built from the Test period and sealed.
+  - the 36 users of the 49 official groups are excluded
+  - same conditions as the official groups: 4 people with >= 5 common movies in the Test period, each with >= 10 Train+Validation ratings
+  - this script only looks at 'who watched which movie' and never opens the ratings
+  - version 1 and version 2 are each scored 'exactly once' on this test set and compared
 """
 import itertools
 import os
@@ -18,17 +18,17 @@ import pandas as pd
 sys.path.insert(0, "src")
 from common import RESULTS, SEED, load_movielens, save_json  # noqa: E402
 
-MIN_COMMON = int(os.environ.get("MIN_COMMON", 5))      # 3번 시험지는 남은 사용자 기록이 적어 3 사용
+MIN_COMMON = int(os.environ.get("MIN_COMMON", 5))      # test set 3 uses 3 because the remaining users have little history
 MIN_HISTORY = 10
 MAX_GROUPS = int(os.environ.get("MAX_GROUPS", 500))
-# 사용법: python 06_make_fresh_holdout.py [이름] [제외할_이전_시험지.csv ...]
-#   3차용: python 06_make_fresh_holdout.py FRESH_HOLDOUT2 results/FRESH_HOLDOUT_groups.csv
-#   -> 이전 시험지의 사용자는 전부 빼서, 두 시험지가 사람 단위로 겹치지 않게 한다.
+# usage: python 06_make_fresh_holdout.py [name] [previous_test_set_to_exclude.csv ...]
+#   for v3: python 06_make_fresh_holdout.py FRESH_HOLDOUT2 results/FRESH_HOLDOUT_groups.csv
+#   -> all users of the previous test sets are removed, so the test sets never share a person
 NAME = sys.argv[1] if len(sys.argv) > 1 else "FRESH_HOLDOUT"
 EXCLUDE = sys.argv[2:]
 
 r, groups = load_movielens()
-r = r.drop(columns=["rating_raw", "rating_norm"])          # 별점은 아예 지워 두고 시작 (봉인)
+r = r.drop(columns=["rating_raw", "rating_norm"])          # start with the ratings deleted (sealed)
 trva = r[r.split.isin(["train", "validation"])]
 te = r[r.split == "test"]
 eval_users = set(groups[[f"user_id_{i}" for i in range(1, 5)]].values.ravel())
@@ -39,7 +39,7 @@ for path in EXCLUDE:
     ok_users -= set(prev[[f"user_id_{i}" for i in range(1, 5)]].values.ravel())
 te = te[te.user_id.isin(ok_users) & te.movie_id.isin(trva.movie_id)]
 sets = {u: set(d.movie_id) for u, d in te.groupby("user_id") if len(d) >= MIN_COMMON}
-# (참고) 1·2번 시험지와 같은 탐색 방식
+# (reference) the same search procedure as test sets 1 and 2
 
 users = sorted(sets, key=lambda u: -len(sets[u]))
 found = set()

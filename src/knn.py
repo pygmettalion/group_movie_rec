@@ -1,8 +1,8 @@
-"""[3차] Item-kNN 협업 필터링: "이 영화와 비슷한 영화들에 이 사람이 몇 점을 줬나?"
+"""[version 3] Item-kNN collaborative filtering: "what did this person give to movies similar to this one?"
 
-1) 기준 점수 = 전체 평균 + 사용자 편향 + 영화 편향 (평점이 적으면 0 쪽으로 당김: shrink)
-2) 영화끼리 유사도 = 기준 점수를 뺀 나머지(취향 부분)의 코사인 유사도, 함께 평가한 사람이 적으면 작게(sim_shrink)
-3) 예측 = 기준 점수 + (그 사람이 본 영화 중 가장 비슷한 k개의 '나머지'를 유사도로 가중평균)
+1) baseline = global mean + user bias + movie bias (shrunk toward 0 when there are few ratings: shrink)
+2) movie-movie similarity = cosine similarity of the residuals after removing the baseline (the taste part); smaller when few people rated both (sim_shrink)
+3) prediction = baseline + (similarity-weighted mean of the 'residuals' of the k most similar movies this person has watched)
 """
 import numpy as np
 import pandas as pd
@@ -35,7 +35,7 @@ class ItemKNN:
         S = num / np.outer(sq, sq) * (co / (co + self.sim_shrink))
         np.fill_diagonal(S, 0.0)
         self.S = S.astype(np.float32)
-        # 사용자별 (본 영화 인덱스, 나머지 값)
+        # per user: (indices of watched movies, residual values)
         order = np.argsort(ui, kind="stable")
         bounds = np.searchsorted(ui[order], np.arange(len(self.uid) + 1))
         self.hist = {u: (ii[order[bounds[j]:bounds[j + 1]]], res[order[bounds[j]:bounds[j + 1]]])
@@ -52,7 +52,7 @@ class ItemKNN:
         k = min(self.k, sims.shape[1])
         top = np.argpartition(-sims, k - 1, axis=1)[:, :k] if sims.shape[1] > k else np.tile(np.arange(sims.shape[1]), (len(q_idx), 1))
         s = np.take_along_axis(sims, top, 1)
-        s = np.maximum(s, 0.0)                     # 비슷한 영화만 (반대 취향 영화는 무시)
+        s = np.maximum(s, 0.0)                     # only similar movies (movies with opposite taste are ignored)
         v = hist_res[top]
         den = s.sum(1)
         return np.where(den > 0, (s * v).sum(1) / np.maximum(den, 1e-9), 0.0)

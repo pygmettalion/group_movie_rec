@@ -1,16 +1,16 @@
-"""데모: 실제 추천처럼 4명에게 영화 1편 추천하기.
+"""Demo: recommend one movie to 4 people, like a real recommendation.
 
-사용법: RESULTS_DIR=results_v1_frozen python 05_demo.py [group_id]   (기본값 1)
+Usage: RESULTS_DIR=results_v1_frozen python 05_demo.py [group_id]   (default 1)
 
-후보(Candidate Set) 만드는 법
-  전체 MovieLens 영화
-  -> 4명 중 누구라도 이미 평점을 남긴 영화 제외 (Train/Validation/Test 전체 기록 기준)
-  -> 최종 모델이 점수를 낼 수 있는 영화만 유지 (MF 를 쓰는 구조면 MF가 학습한 영화만. 처음 보는 영화를 임의로 처리하지 않음)
-  -> 신뢰도 필터: 학습 평점이 너무 적은 영화는 MF 좌표가 '찍은 값'에 가까움.
-     Validation 오차를 영화별 학습 평점 수 구간으로 나눠 보면, 평점 20개 이하 영화는 오차가 크고 점수를 부풀린다.
-     규칙: 'Validation RMSE 가 전체 평균의 1.1배 이내인 구간'만 남김 -> 기준 개수는 코드가 데이터에서 계산
-  -> 모든 후보에 Final Score 계산 -> 1등 추천
-※ 원본 데이터에 영화 제목이 없어 movie_id 와 장르로 표시한다 (movies.dat 를 붙이면 제목 표시 가능).
+How the candidate set is built
+  all MovieLens movies
+  -> remove movies any of the 4 has already rated (based on the full Train/Validation/Test history)
+  -> keep only movies the final model can score (if the structure uses MF, only movies MF was trained on; unseen movies are not handled ad hoc)
+  -> reliability filter: for movies with very few training ratings, the MF factors are close to 'guesses'.
+     Splitting the Validation error by each movie's number of training ratings shows that movies with 20 or fewer ratings have large errors and inflated scores.
+     Rule: keep only 'rating-count bins whose Validation RMSE is within 1.1x of the overall mean' -> the cutoff count is computed from the data by the code
+  -> compute the Final Score for every candidate -> recommend the top one
+* The original data has no movie titles, so movies are shown by movie_id and genres (titles are shown if movies.dat is added).
 """
 import json
 import pickle
@@ -38,7 +38,7 @@ row = groups[groups.group_id == gid].iloc[0]
 users = [int(row[f"user_id_{i}"]) for i in range(1, 5)]
 seen = set(r[r.user_id.isin(users)].movie_id)
 all_movies = sorted(set(trva.movie_id))
-# 신뢰도 필터 기준: Train 만으로 학습한 모델의 Validation 오차(02 단계에서 저장)를 학습 평점 수 구간별로 본다
+# reliability-filter cutoff: look at the Validation error of the Train-only model (saved in step 02) by training-rating-count bins
 tr = r[r.split == "train"]
 v = pd.read_csv(RESULTS / "val_stage1_predictions.csv")
 v["n"] = v.movie_id.map(tr.groupby("movie_id").size())
@@ -61,17 +61,19 @@ thr = np.tile(th.thr.loc[users].to_numpy(), (len(cand), 1))
 share = np.tile(th.share.loc[users].to_numpy(), (len(cand), 1))
 R = risk_proba(risk, pred, thr, share, np.array(cand), movie_stats(trva))
 E = pred.mean(1)
-# 최종 모델 = 1차 식. 'v4' 를 두 번째 인자로 주면 4차 실험 식(평균 + 0.5*최저 - 3.0*위험)으로 비교 가능.
+# final model = v1 formula. Passing 'v4' as the second argument compares with the v4 experiment formula (mean + 0.5*min - 3.0*risk).
 v4 = ROOT / "results_v4" / "FINAL_FROZEN_CONFIG.json"
 if len(sys.argv) > 2 and sys.argv[2] == "v4" and v4.exists():
     c4 = json.load(open(v4, encoding="utf-8"))
     F = E + c4["b"] * pred.min(1) - c4["a"] * R
     final["lam"] = f"{c4['a']} (+ 최저 예측 x {c4['b']})"
+    tag = "_v4"   # v4 comparison output is saved to a separate file (so the v1 demo result is not overwritten)
 else:
     F = E - final["lam"] * R
+    tag = ""
 genre_str = r.drop_duplicates("movie_id").set_index("movie_id").genres
 titles = {}
-if (ROOT / "data_extra" / "ml-1m" / "movies.dat").exists():   # 2차에 받은 movies.dat 이 있으면 제목 표시
+if (ROOT / "data_extra" / "ml-1m" / "movies.dat").exists():   # show titles if the movies.dat obtained for v2 is available
     mv = pd.read_csv(ROOT / "data_extra" / "ml-1m" / "movies.dat", sep="::", engine="python",
                      names=["movie_id", "title", "g"], encoding="latin1")
     titles = dict(zip(mv.movie_id, mv.title))
@@ -80,7 +82,7 @@ out = pd.DataFrame({"movie_id": cand, "title": [titles.get(m, "") for m in cand]
                     "misery_risk": R, "final_score": F,
                     **{f"pred_user{u}_stars": 1 + 4 * np.clip(pred[:, j], 0, 1) for j, u in enumerate(users)}})
 out = out.sort_values("final_score", ascending=False).reset_index(drop=True)
-out.to_csv(RESULTS / f"demo_group{gid}.csv", index=False)
+out.to_csv(RESULTS / f"demo_group{gid}{tag}.csv", index=False)
 
 pd.set_option("display.width", 200)
 print(f"\nlambda = {final['lam']}  (Final = 예상만족 - lambda x Strong Dislike 위험)")

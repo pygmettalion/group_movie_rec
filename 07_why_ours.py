@@ -1,13 +1,13 @@
-"""'왜 우리 추천기를 써야 하나?' — 흔한 추천 방식들과 1차 최종 모델 비교.
+"""'Why use our recommender?' — compare common recommendation methods with the v1 final model.
 
-비교 대상 (모두 고정된 규칙, 시험 데이터로 아무것도 조정하지 않음)
-  - 한 사람 계정 추천 (Host): 넷플릭스처럼 '틀어 놓은 사람' 1명의 취향 1등. 4명 각자가 호스트인 경우를 평균.
-  - 인기순 (Popular): 과거에 가장 많이 본 영화
-  - 평점순 (Top-rated): 과거 평균 별점이 가장 높은 영화 (평점 적은 영화는 전체 평균 쪽으로 당김)
-  - 평균 최대 (Average): 4명 예측 평균이 가장 높은 영화 = '최고 기준'에만 맞추는 일반적인 그룹 추천
-  - 우리 모델 (Risk-Aware, 1차 고정): 평균 - 0.75 x Strong Dislike 위험
-채점: 1번·2번 새 시험지 1,000그룹 (1차는 둘 다 보기 전에 고정됨).
-핵심 지표: '아무도 강하게 싫어하지 않은 비율'(= 1 - Strong Dislike 발생률), 최저 만족도. 평균 만족도는 함께 확인.
+Compared methods (all fixed rules; nothing is tuned on test data)
+  - single-account recommendation (Host): like Netflix, the top pick of the one person 'who pressed play'. Averaged over each of the 4 being the host.
+  - Popular: the movie watched most often in the past
+  - Top-rated: the movie with the highest past average rating (movies with few ratings are shrunk toward the global mean)
+  - Average (maximize the mean): the movie with the highest mean of the 4 predictions = a typical group recommender that only targets the 'best case'
+  - our model (Risk-Aware, v1 frozen): mean - 0.75 x Strong Dislike risk
+Scoring: fresh holdouts 1 and 2, 1,000 groups (v1 was frozen before either was seen).
+Key metrics: 'share of groups where nobody strongly disliked the pick' (= 1 - Strong Dislike rate), minimum satisfaction. Average satisfaction is checked as well.
 """
 import json
 import pickle
@@ -37,7 +37,7 @@ mean = trva.groupby("movie_id").rating_norm.agg(["sum", "count"])
 top_rated = (mean["sum"] + 20 * trva.rating_norm.mean()) / (mean["count"] + 20)
 
 def awm(pred, thr):
-    """Average Without Misery: 누군가의 '예측 점수'가 자기 불호 기준선 이하인 영화는 빼고 평균 1등. 다 빠지면 평균 1등."""
+    """Average Without Misery: drop movies where someone's 'predicted score' is at or below their own Strong Dislike threshold, then take the top mean. If all are dropped, take the top mean."""
     ok = (pred > thr[None, :]).all(1)
     m = pred.mean(1)
     return int(np.argmax(np.where(ok, m, -np.inf))) if ok.any() else int(np.argmax(m))
@@ -56,7 +56,7 @@ for hname, path in [("1번", ROOT / "results_v2" / "FRESH_HOLDOUT_groups.csv"), 
             "Popular (인기순)": [int(np.argmax([cnt.get(m, 0) for m in movies]))],
             "Top-rated (평점순)": [int(np.argmax([top_rated.get(m, 0) for m in movies]))],
             "Average (평균 최대)": [int(np.argmax(c["exp_sat"]))],
-            # --- 그룹 추천 분야의 고전 규칙들 (Masthoff 의 group aggregation strategies) ---
+            # --- classic rules from the group recommendation literature (Masthoff's group aggregation strategies) ---
             "Least Misery (최저점 최대)": [int(np.argmax(pred.min(1) + 1e-9 * pred.mean(1)))],
             "Most Pleasure (최고점 최대)": [int(np.argmax(pred.max(1) + 1e-9 * pred.mean(1)))],
             "Multiplicative (곱 최대)": [int(np.argmax(np.prod(np.clip(pred, 1e-3, None), axis=1)))],
@@ -84,7 +84,7 @@ out = {}
 for b in order[:-1]:
     out[b] = paired_bootstrap(g["Ours (Risk-Aware)"], g[b])
     print(f"Ours - {b}: " + ", ".join(f"{k} {v['diff']:+.4f} [{v['lo']:+.4f},{v['hi']:+.4f}]" for k, v in out[b].items()))
-# Least Misery 가 평균 만족도를 잃는지 확인 (우리 모델과의 차이를 설명하는 근거)
+# check whether Least Misery loses average satisfaction (evidence that explains the difference from our model)
 lm_avg = paired_bootstrap(g["Least Misery (최저점 최대)"], g["Average (평균 최대)"])
 out["(참고) Least Misery - Average"] = lm_avg
 print("(참고) Least Misery - Average: " + ", ".join(f"{k} {v['diff']:+.4f} [{v['lo']:+.4f},{v['hi']:+.4f}]" for k, v in lm_avg.items()))

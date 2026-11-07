@@ -1,13 +1,13 @@
-"""Stage 2 도구: Strong Dislike 기준과 Group Risk(그룹 내 'Strong Dislike' 위험) 피처.
+"""Stage 2 tools: the Strong Dislike threshold and Group Risk (risk of a 'Strong Dislike' within the group) features.
 
-Strong Dislike (개인별 상대 기준)
-  - 사람마다 별점 습관이 다르다. 짠돌이는 3점도 '별로', 후한 사람은 3점이면 '최악'일 수 있다.
-  - 그래서 "그 사람이 과거에 준 점수들 중 하위 p% 선(threshold) 이하" 를 Strong Dislike 로 정의한다.
-  - threshold 는 반드시 '예측 대상 기간보다 앞선 기록'으로만 계산한다 (정답 평점 섞임 = leakage 금지).
+Strong Dislike (a relative threshold per person)
+  - Rating habits differ. For a stingy rater 3 stars may mean 'meh', for a generous one 3 stars may mean 'awful'.
+  - So Strong Dislike is defined as "a score at or below the bottom p% line (threshold) of the scores the person gave in the past".
+  - The threshold is always computed only from 'history before the prediction period' (no leakage of the answer ratings).
 
 Group Misery Risk
-  - "4명 중 적어도 한 명이 Strong Dislike 할 확률" 을 분류기로 예측한다.
-  - 분류기 입력은 Stage 1 의 최종 개인 선호 점수(+사람별 기준선, 영화의 과거 평점 통계)뿐이다.
+  - A classifier predicts "the probability that at least one of the 4 people strongly dislikes it".
+  - The classifier inputs are only Stage 1's final individual preference score (+ per-person threshold and the movie's past rating statistics).
 """
 import numpy as np
 import pandas as pd
@@ -16,13 +16,13 @@ PERCENTILES = [5, 10, 15, 20, 25]
 
 
 def user_thresholds(hist, p):
-    """hist: 예측 시점 이전의 평점표. 반환: DataFrame(user_id -> thr, share)
+    """hist: ratings before the prediction time. Returns: DataFrame(user_id -> thr, share)
 
-    별점은 1,2,3,4,5 처럼 띄엄띄엄이라 같은 점수가 많다(동점).
-    보통의 백분위 공식(q_p 이하)을 쓰면 '하위 5%' 라고 해 놓고 실제로는 그 사람 평점의 14% 가 걸린다(데이터로 확인).
-    그래서 '그 점수 이하가 그 사람 평점의 p% 를 넘지 않는 가장 높은 점수' 를 불호 기준선으로 쓴다.
-    (가장 낮은 점수 하나만으로도 p% 를 넘는 사람은 그 가장 낮은 점수를 불호 기준선으로 둔다.)
-    share = 과거 평점 중 불호 기준선 이하 비율(그 사람이 'Strong Dislike'를 얼마나 자주 주는지).
+    Star ratings are discrete like 1,2,3,4,5, so many scores are equal (ties).
+    With the usual percentile formula (<= q_p), 'bottom 5%' actually catches 14% of a person's ratings (checked on the data).
+    So the Strong Dislike threshold is 'the highest score such that ratings at or below it do not exceed p% of that person's ratings'.
+    (For a person whose single lowest score already exceeds p%, that lowest score is used as the threshold.)
+    share = share of past ratings at or below the threshold (how often the person gives a 'Strong Dislike').
     """
     cnt = hist.groupby(["user_id", "rating_norm"]).size().rename("n").reset_index()
     cnt["cum"] = cnt.groupby("user_id").n.cumsum() / cnt.groupby("user_id").n.transform("sum")
@@ -34,7 +34,7 @@ def user_thresholds(hist, p):
 
 
 def movie_stats(hist):
-    """영화별 과거 평점 통계 (모델 내부 표현이 아니라 '관측 데이터 요약'). 낮은 평점 비율 = 하위 25% 구간."""
+    """Per-movie past rating statistics (an 'observed data summary', not a model-internal representation). Low-rating share = the bottom 25% range."""
     g = hist.groupby("movie_id").rating_norm
     st = pd.DataFrame({
         "m_logcount": np.log1p(g.size()),
@@ -56,7 +56,7 @@ FEATURE_SETS = {
 
 
 def group_features(pred, thr, share, movie_ids, mstats):
-    """pred/thr/share: (그룹-영화 수, 4) 배열. margin = 예측점수 - 그 사람의 불호 기준선 (음수면 위험)."""
+    """pred/thr/share: arrays of shape (number of group-movie pairs, 4). margin = predicted score - that person's Strong Dislike threshold (negative means risky)."""
     pred, thr, share = map(lambda a: np.asarray(a, float), (pred, thr, share))
     margin = pred - thr
     f = pd.DataFrame({
@@ -71,7 +71,7 @@ def group_features(pred, thr, share, movie_ids, mstats):
     return f
 
 
-# 개인 단위 위험 모델용 (추가 후보 구조): 한 사람-한 영화마다 'Strong Dislike 확률'을 구한다.
+# for the individual-level risk model (additional candidate structure): compute a 'Strong Dislike probability' for each person-movie pair.
 INDIV_FEATURES = ["pred", "thr", "margin", "share", "m_logcount", "m_mean", "m_std", "m_lowfrac"]
 
 

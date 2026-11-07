@@ -1,17 +1,17 @@
-"""[추가 실험] MovieLens 10M 준비: 1M 과 '똑같은 규칙'으로 데이터와 시험 그룹을 만든다.
+"""[additional experiment] Prepare MovieLens 10M: build data and test groups with 'exactly the same rules' as 1M.
 
-왜 하나?
-  1M 에서는 '4명이 공통으로 본 영화가 많은 그룹'이 드물어서, 후보가 많을 때의 실력을 크게 보여주기 어려웠다.
-  10M(사용자 약 7만 명)으로 같은 방법을 처음부터 따로 적용해 본다. 1M 에서 정한 숫자는 하나도 바꾸지 않는다.
+Why?
+  In 1M, groups where '4 people share many watched movies' are rare, so it was hard to show performance when there are many candidates.
+  The same method is applied from scratch to 10M (about 70k users). No number chosen on 1M is changed.
 
-규칙 (팀 전처리 코드 prepare_team_data.py 와 같음)
-  - 시간 순서 분할: 평점 시각 기준 앞 70% = Train, 다음 15% = Validation, 마지막 15% = Test
-  - 그룹 사용자: Train+Validation 평점 10개 이상
-  - 평점 정규화: 0.5~5점 -> (점수-0.5)/4.5 (0~1)
-  - Validation 그룹: Validation 기간 공통 영화 5편 이상 (위험 모델 학습용 가짜 그룹은 따로)
-  - Test 그룹: Test 기간 공통 영화 5편 이상, 그리고 10편 이상 묶음을 따로 표시 (별점은 보지 않고 봉인)
+Rules (same as the team preprocessing code prepare_team_data.py)
+  - time-ordered split: by rating time, first 70% = Train, next 15% = Validation, last 15% = Test
+  - group users: at least 10 Train+Validation ratings
+  - rating normalization: 0.5~5 stars -> (rating-0.5)/4.5 (0~1)
+  - Validation groups: >= 5 common movies in the Validation period (pseudo-groups for training the risk model are separate)
+  - Test groups: >= 5 common movies in the Test period, with the >= 10 subset marked separately (sealed without looking at ratings)
 
-입력: data_extra/ml-10m/ (ratings.dat, movies.dat)   출력: results_ml10m/
+Input: data_extra/ml-10m/ (ratings.dat, movies.dat)   Output: results_ml10m/
 """
 import sys
 import zipfile
@@ -42,7 +42,7 @@ def load(src):
 src = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "data_extra" / "ml-10m"
 r, movies = load(src)
 r["rating_norm"] = (r.rating_raw - 0.5) / 4.5
-movies["genres"] = movies.genres.str.replace("Children", "Children's", regex=False)   # 1M 표기와 맞춤
+movies["genres"] = movies.genres.str.replace("Children", "Children's", regex=False)   # match the 1M notation
 r = r.merge(movies[["movie_id", "genres"]], on="movie_id", how="left")
 ts = np.sort(r.timestamp.to_numpy())
 v_start, t_start = ts[len(ts) * 70 // 100], ts[len(ts) * 85 // 100]
@@ -53,12 +53,12 @@ print(f"평점 {len(r):,} / 사용자 {r.user_id.nunique():,} / 영화 {r.movie_
 print(r.split.value_counts().to_dict(), "| Validation 시작", pd.to_datetime(v_start, unit="s"), "Test 시작", pd.to_datetime(t_start, unit="s"))
 
 
-MAX_PER_USER = 10   # 한 사람이 들어갈 수 있는 그룹 수 상한 (영화 많이 본 소수가 시험을 독차지하지 않게)
+MAX_PER_USER = 10   # cap on the number of groups one person can join (so a few heavy viewers do not dominate the test)
 
 
 def find_groups(period, exclude_users, n_max, rng, min_common):
-    """period 기간에 4명이 공통으로 본 영화가 min_common 편 이상인 그룹 (별점은 쓰지 않음).
-    사람을 무작위 순서로 돌며 '같이 본 영화가 많은 사람'을 찾아 4명을 묶고, 한 사람당 그룹 수를 MAX_PER_USER 로 제한."""
+    """Groups of 4 people who share at least min_common movies in the given period (ratings are not used).
+    People are visited in random order; for each, the people with the most co-watched movies are grouped into 4, and the number of groups per person is capped at MAX_PER_USER."""
     from collections import Counter
     hist = r[r.timestamp < (v_start if period == "validation" else t_start)].groupby("user_id").size()
     ok = set(hist[hist >= MIN_HISTORY].index) - exclude_users
@@ -107,7 +107,7 @@ test_groups.to_csv(OUT / "TEST_groups_sealed.csv", index=False)
 print(f"Test 그룹 봉인: 후보 사용자 {n_found:,}명, 그룹 {len(test_groups)}개, 후보 평균 {test_groups.n_common.mean():.1f}편, "
       f"10편 이상 {int((test_groups.n_common >= 10).sum())}개, 사용자 {len(set(test_groups.iloc[:, 1:5].values.ravel()))}명")
 
-# 후보가 많은 그룹(공통 10편 이상)도 따로 봉인 — '고를 영화가 많을 때' 실력 확인용
+# groups with many candidates (>= 10 common) are also sealed separately — to check performance 'when there are many movies to choose from'
 groups10, n10 = find_groups("test", set(), N_GROUPS, np.random.default_rng(SEED + 1), 10)
 groups10.to_csv(OUT / "TEST_groups10_sealed.csv", index=False)
 print(f"Test 그룹(10편 이상) 봉인: 후보 사용자 {n10:,}명, 그룹 {len(groups10)}개, 후보 평균 {groups10.n_common.mean():.1f}편, "

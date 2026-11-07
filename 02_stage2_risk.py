@@ -1,25 +1,25 @@
-"""Stage 2: Strong Dislike 기준(percentile) + Group Risk 분류기 고르기.
+"""Stage 2: choose the Strong Dislike threshold (percentile) + the Group Risk classifier.
 
-쉽게 말하면
-  "이 영화를 4명이 보면, 그중 누군가 '최악이야!' 할 확률" 을 맞히는 모델을 만든다.
+In plain words
+  Build a model that predicts "if these 4 people watch this movie, the probability that someone says 'that was awful!'".
 
-학습 데이터를 어떻게 만드나?
-  - 공식 평가 그룹은 49개뿐이라 분류기를 학습시키기엔 너무 적다.
-  - 그래서 Validation 기간에 '같은 영화를 본 사람 4명'을 무작위로 묶어 연습용 가짜 그룹(pseudo-group)을 만든다.
-  - 공식 평가 그룹 사용자 36명은 여기서 완전히 제외한다 -> 나중에 lambda 를 고를 때 쓰는 데이터와 겹치지 않음.
-  - 개인 선호 점수는 Train 만으로 학습한 Stage 1 모델이 낸 값(= 그 영화 평점은 모르는 상태의 예측)을 쓴다.
+How is the training data built?
+  - There are only 49 official evaluation groups, far too few to train a classifier.
+  - So in the Validation period, 4 people who watched the same movie are grouped at random into practice groups (pseudo-groups).
+  - The 36 users of the official evaluation groups are fully excluded here -> no overlap with the data later used to choose lambda.
+  - The individual preference score is the output of the Stage 1 model trained on Train only (= a prediction made without knowing that rating).
 
-무엇을 비교하나?
-  - Strong Dislike percentile 후보: 5, 10, 15, 20, 25
-  - 분류기: Logistic Regression / HistGradientBoosting / RandomForest (각각 몇 가지 설정)
-  - 피처 조합: F1(예측점수만) / F2(+개인 불호 기준선과의 거리) / F3(+영화 과거 평점 통계)
-  - 채점: 영화 단위로 나눈 5-fold 교차검증 (같은 영화가 학습/채점에 동시에 들어가지 않게)
+What is compared?
+  - Strong Dislike percentile candidates: 5, 10, 15, 20, 25
+  - Classifiers: Logistic Regression / HistGradientBoosting / RandomForest (a few settings each)
+  - Feature sets: F1 (prediction only) / F2 (+ distance to the personal Strong Dislike threshold) / F3 (+ the movie's past rating statistics)
+  - Scoring: 5-fold cross-validation split by movie (the same movie never appears in both training and scoring)
 
-선택 규칙 (결과를 보기 전에 정해 둠)
-  1) 각 percentile 안에서: 교차검증 log loss 가 가장 낮은 (분류기, 설정, 피처조합)
-     -> 확률값 자체가 최종 점수에 들어가므로 '확률이 잘 맞는지'를 보는 log loss 를 쓴다.
-  2) percentile 끼리: 위 모델의 ROC-AUC(위험한 영화를 얼마나 잘 골라내는지, 기준선 비율과 무관)가 가장 높은 값.
-     AUC 차이가 0.005 이내면 더 작은 percentile(더 '강한' 싫음)을 고른다.
+Selection rules (fixed before looking at results)
+  1) Within each percentile: the (classifier, setting, feature set) with the lowest cross-validated log loss
+     -> the probability itself enters the final score, so log loss (how well-calibrated the probability is) is used.
+  2) Across percentiles: the value with the highest ROC-AUC of the model above (how well risky movies are ranked, independent of the base rate).
+     If the AUC gap is within 0.005, pick the smaller percentile (a 'stronger' dislike).
 """
 import itertools
 import pickle
@@ -39,8 +39,8 @@ from models import Stage1Predictor  # noqa: E402
 from risk import (FEATURE_SETS, INDIV_FEATURES, PERCENTILES, group_features, indiv_features, movie_stats,  # noqa: E402
                   user_thresholds)
 
-MIN_HISTORY = 10          # 그룹 사용자와 같은 조건(과거 평점 10개 이상)
-GROUPS_PER_MOVIE = 20     # 영화 하나당 가짜 그룹 최대 개수 (인기 영화가 데이터를 독차지하지 않게)
+MIN_HISTORY = 10          # same condition as group users (at least 10 past ratings)
+GROUPS_PER_MOVIE = 20     # maximum number of pseudo-groups per movie (so popular movies do not dominate the data)
 
 r, groups = load_movielens()
 tr = r[r.split == "train"]
@@ -48,7 +48,7 @@ va = r[r.split == "validation"]
 gt = movie_genre_table(r)
 sel = load_json("stage1_selection_final.json")
 
-# ---------------------------------------------------------------- Stage 1 (Train 만으로 학습) 예측
+# ---------------------------------------------------------------- Stage 1 predictions (trained on Train only)
 print("Stage 1 모델을 Train 으로 학습 ->", sel["structure"])
 s1 = Stage1Predictor(sel, gt, seed=SEED).fit(tr)
 counts = tr.groupby("user_id").size()
@@ -58,14 +58,14 @@ va_w = va[va.user_id.isin(counts[counts >= MIN_HISTORY].index) & va.movie_id.isi
 va_w["pred"] = s1.predict(va_w.user_id.values, va_w.movie_id.values)
 va_w[["user_id", "movie_id", "rating_norm", "pred"]].to_csv(RESULTS / "val_stage1_predictions.csv", index=False)
 
-# ---------------------------------------------------------------- 가짜 그룹 만들기
+# ---------------------------------------------------------------- build pseudo-groups
 pool = va_w[~va_w.user_id.isin(eval_users)]
 rng = np.random.default_rng(SEED)
 cols = ["movie_id", "u1", "u2", "u3", "u4", "y1", "y2", "y3", "y4", "p1", "p2", "p3", "p4"]
 
 
 def make_pseudo(pool_df, rng):
-    """같은 영화를 Validation 기간에 본 사람 4명을 무작위로 묶는다 (영화당 최대 GROUPS_PER_MOVIE 개)."""
+    """Randomly group 4 people who watched the same movie in the Validation period (at most GROUPS_PER_MOVIE per movie)."""
     rows = []
     for movie, d in pool_df.groupby("movie_id"):
         if len(d) < 4:
@@ -111,7 +111,7 @@ CLASSIFIERS = {
        for lf in [30, 150]},
 }
 
-# 영화 단위 5-fold: 같은 영화는 항상 같은 fold (그룹 분류기와 개인 분류기가 똑같은 나눔을 쓰게)
+# 5-fold by movie: the same movie is always in the same fold (the group and individual classifiers use exactly the same split)
 movies_perm = rng.permutation(pool.movie_id.unique())
 movie_fold = {m: i % 5 for i, m in enumerate(movies_perm)}
 pg_fold = pg.movie_id.map(movie_fold).to_numpy()
@@ -125,7 +125,7 @@ def build_indiv(p, pool=pool, pg=pg):
     Xi = indiv_features(pool.pred.to_numpy(), pool.user_id.map(th.thr).to_numpy(),
                         pool.user_id.map(th.share).to_numpy(), pool.movie_id.to_numpy(), mstats)
     yi = (pool.rating_norm.to_numpy() <= pool.user_id.map(th.thr).to_numpy()).astype(int)
-    # 가짜 그룹 4명 각각의 개인 피처 (위험확률을 4명 곱으로 합치기 위해)
+    # individual features for each of the 4 pseudo-group members (to combine risk as a product over the 4 people)
     Xg = [indiv_features(pg[pc].to_numpy(), pg[uc].map(th.thr).to_numpy(), pg[uc].map(th.share).to_numpy(),
                          pg.movie_id.to_numpy(), mstats) for pc, uc in zip(PC, UC)]
     return Xi, yi, Xg
@@ -148,7 +148,7 @@ for p in PERCENTILES:
         print(f"  {structure:6s} {fs:15s} {cname:24s} logloss {row['logloss']:.4f}  AUC {row['auc']:.4f}  "
               f"PR-AUC {row['pr_auc']:.4f}")
 
-    # (가) 그룹 분류기: 4명을 한 번에 보고 '누군가 Strong Dislike' 확률을 바로 예측
+    # (a) group classifier: looks at all 4 people at once and directly predicts the probability that 'someone strongly dislikes it'
     for (fs, feats), (cname, make) in itertools.product(FEATURE_SETS.items(), CLASSIFIERS.items()):
         oof = np.zeros(len(y))
         for f in range(5):
@@ -157,7 +157,7 @@ for p in PERCENTILES:
             oof[b] = clf.predict_proba(X.loc[b, feats])[:, 1]
         record("group", fs, cname, oof)
 
-    # (나) 개인 분류기: 한 명씩 'Strong Dislike 확률' p_i 를 구한 뒤 1-(1-p1)(1-p2)(1-p3)(1-p4) 로 합침
+    # (b) individual classifier: get each person's 'Strong Dislike probability' p_i, then combine as 1-(1-p1)(1-p2)(1-p3)(1-p4)
     Xi, yi, Xg = build_indiv(p)
     for cname, make in INDIV_CLASSIFIERS.items():
         oof = np.zeros(len(y))
@@ -178,13 +178,13 @@ best_rows.to_csv(RESULTS / "stage2_best_per_percentile.csv", index=False)
 print("\n각 percentile 최고 모델:\n", best_rows[["percentile", "structure", "features", "classifier", "logloss", "auc", "pr_auc",
                                             "base_rate", "indiv_dislike_rate", "rule_auc"]].to_string(index=False))
 
-# percentile 선택: AUC 최대, 0.005 이내 동률이면 작은 percentile
+# percentile choice: maximum AUC; ties within 0.005 go to the smaller percentile
 top_auc = best_rows.auc.max()
 p_star = int(best_rows[best_rows.auc >= top_auc - 0.005].percentile.min())
 best = per_p[p_star]
 print(f"\n선택된 percentile = {p_star}, 구조 = {best['structure']}, 분류기 = {best['classifier']}, 피처 = {best['features']}")
 
-# 선택된 설정으로 전체 데이터에 다시 학습 -> 고정
+# refit the chosen setting on all data -> freeze
 if best["structure"] == "group":
     X, y, _ = build(pg, p_star)
     feats = FEATURE_SETS[best["features"]]
@@ -203,13 +203,13 @@ save_json(dict(
 ), "stage2_selection.json")
 
 
-# ================================================================ lambda 고르기용 추가 연습 그룹 (교차 적합)
-# 공식 Validation 그룹은 49개(사용자 36명)뿐이라 lambda 가 '운'에 좌우될 수 있다.
-# 그래서 공식 그룹과 같은 방식(4명이 Validation 기간에 공통으로 본 영화 5편 이상)으로 연습 그룹을 더 만든다.
-# 단, 이 그룹들의 위험 점수는 '그 사람들을 한 번도 학습에 쓰지 않은' 분류기로 계산해야 공정하다:
-#   사용자를 무작위로 반반(H0/H1) 나눔 -> 같은 반 4명으로만 그룹 구성
-#   -> H0 그룹은 H1 사람들로만 학습한 분류기로, H1 그룹은 H0 분류기로 위험 점수 계산 (cross-fitting)
-#   (최종 고정 분류기는 위에서 전체로 학습한 것. 설정은 동일)
+# ================================================================ extra practice groups for choosing lambda (cross-fitted)
+# The official Validation groups are only 49 (36 users), so lambda could depend on 'luck'.
+# So more practice groups are built the same way as the official ones (4 people with >= 5 common movies in the Validation period).
+# However, for fairness their risk scores must come from a classifier that 'never saw those people in training':
+#   split users randomly in half (H0/H1) -> build groups only from 4 people in the same half
+#   -> H0 groups are scored by a classifier trained only on H1 people, and H1 groups by the H0 classifier (cross-fitting)
+#   (the final frozen classifier is the one trained on all data above, with the same setting)
 MIN_COMMON, MAX_EXTRA_PER_HALF = 5, 300
 half_rng = np.random.default_rng(SEED + 1)
 pool_users = np.array(sorted(pool.user_id.unique()))

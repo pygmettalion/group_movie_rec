@@ -1,11 +1,11 @@
-"""[3차] Stage 1: MF(여러 번 학습해 평균) + Content(장르·연도·평론가·감독) + Item-kNN 을 '섞기 모델'로 합친다.
+"""[version 3] Stage 1: combine MF (mean of several training runs) + Content (genre, year, critic, director) + Item-kNN with a 'blending model'.
 
-섞기 모델(blender) 종류는 31_v3_stage1.py 가 Validation 교차검증으로 고른다:
-  H2      : 1·2차와 같은 '평점 수 구간별 비율' (MF + Content)
+The blender type is chosen by 31_v3_stage1.py with Validation cross-validation:
+  H2      : the same 'ratio per rating-count bucket' as v1/v2 (MF + Content)
   LIN3    : a + b*MF + c*Content + d*kNN
-  LIN3_B  : 위 식을 평점 수 구간별로 따로
-  GBM     : 세 예측 + 상황 정보(사용자 평점 수, 영화 평점 수, 평론가 점수 등)를 보고 비율을 스스로 배우는 모델
-Stage 2 로는 최종 점수 하나만 넘긴다(1·2차와 같은 원칙).
+  LIN3_B  : the formula above, separately per rating-count bucket
+  GBM     : a model that learns the ratio itself from the three predictions + context (user rating count, movie rating count, critic score, etc.)
+Only one final score is passed to Stage 2 (same principle as v1/v2).
 """
 import pickle
 

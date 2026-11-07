@@ -1,6 +1,6 @@
-"""[2차 버전] lambda 다시 고르기 -> 2차 모델 고정. 1차와 같은 규칙, 같은 종류의 Validation 그룹.
+"""[version 2] Re-select lambda -> freeze the v2 model. Same rule and same kind of Validation groups as v1.
 
-실행: RESULTS_DIR=results_v2 python 13_v2_lambda.py
+Run: RESULTS_DIR=results_v2 python 13_v2_lambda.py
 """
 import pickle
 import sys
@@ -50,7 +50,7 @@ official = cases[:49]
 print(f"lambda 선택용 그룹 {len(cases)}개 (공식 {len(official)} + 연습 {len(cases) - len(official)})")
 
 rows = [dict(lam=lam, **summarize(evaluate(cases, "RiskAware", lam))) for lam in LAMBDA_GRID]
-# 최적값이 격자 끝(5.0)이면 더 큰 값까지 넓혀서 다시 확인 (다른 숫자들과 같은 원칙)
+# if the best value is at the grid edge (5.0), widen to larger values and re-check (same principle as the other numbers)
 grid = list(LAMBDA_GRID)
 while max(rows, key=lambda x: (x["balanced_score"], -x["lam"]))["lam"] == grid[-1] and grid[-1] < 1000:
     for lam in [grid[-1] * 1.5, grid[-1] * 2, grid[-1] * 4]:

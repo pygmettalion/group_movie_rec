@@ -1,8 +1,8 @@
-"""[4차] 외부 데이터 시험: MovieTweetings 44그룹 (다른 서비스 사용자). 4차는 이미 고정됨 -> 한 번만 채점.
+"""[version 4] External data test: 44 MovieTweetings groups (users of another service). v4 is already frozen -> scored only once.
 
-1차 외부 시험(04_final_test.py)과 같은 방식: MovieLens(Train+Validation)로 학습한 모델에
-MovieTweetings 사용자의 과거 평점을 넣어(fold-in) 예측, 불호 기준선은 각자의 MovieTweetings 과거 평점으로 계산.
-실행: python 43_v4_external.py
+Same procedure as the v1 external test (04_final_test.py): MovieTweetings users' past ratings are folded into the model trained on
+MovieLens (Train+Validation) to predict, and each Strong Dislike threshold is computed from that user's own past MovieTweetings ratings.
+Run: python 43_v4_external.py
 """
 import json
 import pickle
@@ -21,7 +21,7 @@ cfg1 = json.load(open(ROOT / "results_v1_frozen" / "FINAL_FROZEN_CONFIG.json", e
 cfg4 = json.load(open(ROOT / "results_v4" / "FINAL_FROZEN_CONFIG.json", encoding="utf-8"))
 with open(ROOT / "results_v1_frozen" / "risk_model.pkl", "rb") as f:
     risk = pickle.load(f)
-assert cfg4["combo"] == "S1+RV1"   # 4차 = 1차 예측 + 1차 위험 모델 + 새 점수 식
+assert cfg4["combo"] == "S1+RV1"   # v4 = v1 predictions + v1 risk model + the new scoring formula
 r, _ = load_movielens()
 trva = r[r.split.isin(["train", "validation"])]
 s1 = Stage1Predictor(cfg1["stage1"], movie_genre_table(r), seed=SEED).fit(trva)

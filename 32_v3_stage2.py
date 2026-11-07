@@ -1,10 +1,10 @@
-"""[3차 버전] Strong Dislike 기준 + 위험 모델 다시 고르기 (3차 Stage 1 예측으로 다시 학습) — Validation 으로만.
+"""[version 3] Re-select the Strong Dislike threshold + risk model (retrained on v3 Stage 1 predictions) — on Validation only.
 
-1차와 같은 절차(가짜 그룹, 영화 단위 5-fold, 같은 선택 규칙)에
-새 피처 조합(I_meta, I_gd, I_meta_gd)을 후보로 추가했다. 1차 피처(I_member)도 후보에 그대로 있다.
-1차에서 '개인 확률 -> 4명 합치기' 구조가 모든 percentile 에서 그룹 분류기를 이겨서, 2차는 그 구조만 비교한다.
+Same procedure as v1 (pseudo-groups, 5-fold by movie, same selection rules),
+with new feature sets (I_meta, I_gd, I_meta_gd) added as candidates. The v1 features (I_member) remain a candidate.
+In v1 the 'individual probability -> combine 4 people' structure beat the group classifier at every percentile, so only that structure is compared.
 
-실행: RESULTS_DIR=results_v3 python 32_v3_stage2.py
+Run: RESULTS_DIR=results_v3 python 32_v3_stage2.py
 """
 import itertools
 import pickle
@@ -101,7 +101,7 @@ for p in PERCENTILES:
         base = y.mean()
         for fs, feats in INDIV_V2_SETS.items():
             if alpha != ALPHAS[0] and "u_gdis" not in feats:
-                continue   # alpha 는 장르 Strong Dislike 피처에만 영향
+                continue   # alpha only affects the genre Strong Dislike feature
             for cname, make in CLASSIFIERS.items():
                 oof = np.zeros(len(y))
                 for f in range(5):
@@ -134,7 +134,7 @@ final_clf = CLASSIFIERS[best["classifier"]]().fit(Xi[feats], yi)
 RISK = dict(model=final_clf, features=feats, kind="indiv_v2", alpha=alpha_star, kappa=KAPPA, percentile=p_star)
 with open(RESULTS / "risk_model.pkl", "wb") as f:
     pickle.dump(RISK, f)
-v1_best = best_rows  # 참고용
+v1_best = best_rows  # for reference
 save_json(dict(version="v3", percentile=p_star, structure="indiv_v2", feature_set=best["features"], features=feats,
                alpha=alpha_star, kappa=KAPPA, classifier=best["classifier"], cv_logloss=best["logloss"],
                cv_auc=best["auc"], base_rate=best["base_rate"], indiv_dislike_rate=best["indiv_dislike_rate"],
@@ -142,7 +142,7 @@ save_json(dict(version="v3", percentile=p_star, structure="indiv_v2", feature_se
                rule="percentile 내: CV log loss 최소 / percentile 간: AUC 최대(0.005 이내면 작은 p)"),
           "stage2_selection.json")
 
-# ================================================================ lambda 용 추가 연습 그룹 (1차와 같은 교차 적합)
+# ================================================================ extra practice groups for lambda (same cross-fitting as v1)
 MIN_COMMON, MAX_EXTRA = 5, 300
 pool_users = np.array(sorted(pool.user_id.unique()))
 half_of = dict(zip(pool_users, np.random.default_rng(SEED + 1).integers(0, 2, len(pool_users))))

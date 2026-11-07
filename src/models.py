@@ -1,30 +1,30 @@
-"""Stage 1 개인 선호 모델 3종: MF, Content, Hybrid.
+"""Three Stage 1 individual preference models: MF, Content, Hybrid.
 
-비유로 설명하면
-- MF(행렬 분해): "너랑 취향 비슷한 사람들이 이 영화 좋아했어" 를 숫자로 압축해서 맞히는 방식.
-  사람과 영화를 각각 k개의 '취향 좌표'로 바꾸고, 좌표가 잘 맞으면 높은 점수.
-- Content(장르 기반): "너는 원래 액션을 좋아하더라" 처럼 영화 장르만 보고 맞히는 방식.
-  처음 보는 영화라도 장르만 알면 점수를 낼 수 있다(콜드스타트에 강함).
-- Hybrid: alpha * MF + (1 - alpha) * Content. alpha 는 Validation 에서 정한다.
+By analogy
+- MF (matrix factorization): predicts "people with taste similar to yours liked this movie", compressed into numbers.
+  Each person and each movie becomes k 'taste coordinates'; a good match of coordinates gives a high score.
+- Content (genre-based): predicts from the movie's genres only, like "you usually like action".
+  Even a movie never seen before can be scored if its genres are known (robust to cold start).
+- Hybrid: alpha * MF + (1 - alpha) * Content. alpha is chosen on Validation.
 """
 import numpy as np
 import pandas as pd
 
 
 # ----------------------------------------------------------------------------------------------
-# 1) Matrix Factorization (편향 포함, 미니배치 SGD 학습)
+# 1) Matrix Factorization (with biases, trained by mini-batch SGD)
 # ----------------------------------------------------------------------------------------------
 class MF:
-    """예측 = 전체평균 + 사용자편향 + 영화편향 + (사용자좌표 · 영화좌표)
+    """prediction = global mean + user bias + movie bias + (user factors . movie factors)
 
-    하이퍼파라미터: k(좌표 개수=latent dimension), lr(학습률), reg(규제 강도), epochs
+    hyperparameters: k (number of factors = latent dimension), lr (learning rate), reg (regularization strength), epochs
     """
 
     def __init__(self, k=32, lr=0.05, reg=0.02, epochs=30, batch=2048, seed=42):
         self.k, self.lr, self.reg, self.epochs, self.batch, self.seed = k, lr, reg, epochs, batch, seed
 
     def fit(self, users, items, y, val=None, patience=3, verbose=False):
-        """val=(users, items, y) 를 주면 매 epoch 성능을 기록하고, 나빠지면 일찍 멈춘다(early stopping)."""
+        """Given val=(users, items, y), performance is recorded every epoch and training stops early when it gets worse (early stopping)."""
         rng = np.random.default_rng(self.seed)
         self.uid = {u: i for i, u in enumerate(pd.unique(users))}
         self.iid = {m: i for i, m in enumerate(pd.unique(items))}
@@ -72,7 +72,7 @@ class MF:
         return m in self.iid
 
     def predict(self, users, items):
-        """학습 때 못 본 사용자/영화는 해당 부분을 0으로 둔다(=평균 쪽으로 물러섬)."""
+        """Users/movies not seen during training get 0 for that part (= fall back toward the mean)."""
         ui = np.array([self.uid.get(x, -1) for x in users])
         ii = np.array([self.iid.get(x, -1) for x in items])
         out = np.full(len(ui), self.mu)
@@ -84,9 +84,9 @@ class MF:
         return out
 
     def fold_in(self, items, y):
-        """모델에 없던 새 사용자(예: MovieTweetings, Beliefs)의 좌표를 과거 평점으로 계산.
-        영화 좌표는 고정하고, 그 사람의 편향+좌표만 릿지 회귀로 푼다(학습 때와 같은 규제 사용).
-        반환: (bu, p) . 아는 영화가 하나도 없으면 None.
+        """Compute the factors of a new user not in the model (e.g., MovieTweetings, Beliefs) from their past ratings.
+        Movie factors are kept fixed and only that person's bias + factors are solved by ridge regression (same regularization as in training).
+        Returns: (bu, p). None if no known movie exists.
         """
         idx = np.array([self.iid.get(m, -1) for m in items])
         keep = idx >= 0
@@ -109,7 +109,7 @@ class MF:
 
 
 def recency_weights(timestamps, half_life_days):
-    """반감기(half-life) 만큼 지난 평점은 무게 절반. None 이면 모두 1 (1차 버전과 같음)."""
+    """Ratings older by one half-life get half the weight. If None, all weights are 1 (same as version 1)."""
     if not half_life_days:
         return None
     ts = np.asarray(timestamps, float)
@@ -118,10 +118,10 @@ def recency_weights(timestamps, half_life_days):
 
 
 class ALSMF(MF):
-    """같은 MF 식을 '번갈아 최소제곱(ALS)'으로 학습하는 버전 (추가 후보).
+    """Version that trains the same MF formula with 'alternating least squares (ALS)' (additional candidate).
 
-    SGD 는 학습률·순서에 따라 결과가 흔들릴 수 있다. ALS 는 사용자 쪽/영화 쪽을 번갈아 '정확한 답'으로 풀어서
-    더 안정적이다. 규제는 평점 수에 비례(reg * n)하게 준다. k=0 이면 '취향 좌표 없이 편향만' 쓰는 기준 모델.
+    SGD results can fluctuate with the learning rate and order. ALS alternately solves the user side / movie side 'exactly',
+    so it is more stable. Regularization is proportional to the number of ratings (reg * n). k=0 is the baseline that uses 'biases only, no taste factors'.
     """
 
     def __init__(self, k=32, reg=0.05, epochs=15, seed=42):
@@ -146,7 +146,7 @@ class ALSMF(MF):
             t = y[rows] - self.mu - other_b[o]
             if wts is None:
                 w = np.linalg.solve(X.T @ X + self.reg * len(rows) * eye, X.T @ t)
-            else:  # 최근 평점에 더 큰 가중치 (2차 버전 후보)
+            else:  # larger weight on recent ratings (version 2 candidate)
                 ww = wts[rows]
                 w = np.linalg.solve(X.T @ (X * ww[:, None]) + self.reg * ww.sum() * eye, X.T @ (t * ww))
             out_b[j], out_F[j] = w[0], w[1:]
@@ -187,14 +187,14 @@ class ALSMF(MF):
 
 
 # ----------------------------------------------------------------------------------------------
-# 2) Content-Based (장르 취향 모델)
+# 2) Content-Based (genre taste model)
 # ----------------------------------------------------------------------------------------------
 class ContentModel:
-    """예측 = 사용자 평균 + (그 사람의 장르별 선호 가중치 · 영화 장르 구성비)
+    """prediction = user mean + (the person's per-genre preference weights . the movie's genre composition)
 
-    - 사용자 평균은 평점이 적으면 전체 평균 쪽으로 당긴다(k_mean).
-    - 장르 가중치는 '모든 사람 공통 장르 효과'에서 출발해서, 개인 데이터가 많을수록 개인 쪽으로 이동(lam_user).
-    영화 ID 자체는 전혀 쓰지 않는다 -> 장르만 있으면 새 영화도 점수 가능.
+    - the user mean is shrunk toward the global mean when there are few ratings (k_mean).
+    - genre weights start from the 'genre effect shared by everyone' and move toward the individual as personal data grows (lam_user).
+    The movie ID itself is never used -> any new movie with genres can be scored.
     """
 
     def __init__(self, k_mean=5.0, lam_user=10.0, lam_global=1.0):
@@ -204,7 +204,7 @@ class ContentModel:
         df = pd.DataFrame({"u": users, "m": items, "y": np.asarray(y, float)})
         self.gt = genre_table
         self.mu = df.y.mean()
-        m_codes, m_uniq = pd.factorize(df.m)                 # 영화별 벡터를 한 번만 만들고 펼침 (큰 데이터용, 결과 동일)
+        m_codes, m_uniq = pd.factorize(df.m)                 # build the per-movie vectors once and expand (for large data; same result)
         X = np.vstack([genre_table[m] for m in m_uniq])[m_codes]
         st = df.groupby("u").y.agg(["sum", "count"])
         self.user_mean = ((st["sum"] + self.k_mean * self.mu) / (st["count"] + self.k_mean)).to_dict()
@@ -224,7 +224,7 @@ class ContentModel:
         return self
 
     def profile_from_history(self, items, y, genre_table=None):
-        """새 사용자 프로필(평균, 장르가중치)을 과거 평점만으로 계산. 모델 파라미터(mu, w_global)는 고정."""
+        """Compute a new user's profile (mean, genre weights) from past ratings only. Model parameters (mu, w_global) are kept fixed."""
         gt = genre_table or self.gt
         y = np.asarray(y, float)
         if len(y) == 0:
@@ -254,13 +254,13 @@ class ContentModel:
 
 
 # ----------------------------------------------------------------------------------------------
-# 4) Stage 1 최종 예측기: Validation 에서 고른 설정 그대로 학습해서 '하나의 개인 선호 점수'만 내보낸다
+# 4) Stage 1 final predictor: trained with exactly the settings chosen on Validation, it outputs only 'one individual preference score'
 # ----------------------------------------------------------------------------------------------
 class Stage1Predictor:
-    """selection(stage1_selection_final.json) 의 설정으로 MF·Content 를 학습하고 선택된 구조로 섞는다.
-    Stage 2 에는 이 클래스의 최종 점수만 전달된다(MF 좌표나 장르 가중치는 넘기지 않음).
+    """Train MF and Content with the settings in selection (stage1_selection_final.json) and mix them with the chosen structure.
+    Only this class's final score is passed to Stage 2 (MF factors and genre weights are not passed on).
 
-    structure: 'MF only' | 'Content only' | 'H1_global'(alpha) | 'H2_bucket'(평점 수별 alpha) | 'H3_stack'(a+b*MF+c*C)
+    structure: 'MF only' | 'Content only' | 'H1_global'(alpha) | 'H2_bucket'(alpha by rating count) | 'H3_stack'(a+b*MF+c*C)
     """
 
     def __init__(self, selection, genre_table, seed=42):
@@ -277,7 +277,7 @@ class Stage1Predictor:
     def fit(self, df):
         U, M, Y = df.user_id.values, df.movie_id.values, df.rating_norm.values
         if self.use_mf:
-            # epochs 는 Validation 에서 고른 값으로 고정 (early stopping 없음)
+            # epochs are fixed to the value chosen on Validation (no early stopping)
             wts = recency_weights(df.timestamp.values, self.sel["mf"].get("half_life"))
             if isinstance(self.mf, ALSMF):
                 self.mf.fit(U, M, Y, sample_weight=wts)
@@ -285,7 +285,7 @@ class Stage1Predictor:
                 self.mf.fit(U, M, Y)
         if self.use_content:
             fs = self.sel["content"].get("feature_set", "G")
-            if fs != "G":   # 2차 버전: 장르 + 연도/평론가/감독 피처 표
+            if fs != "G":   # version 2: table of genre + year/critic/director features
                 from features_v2 import build_table
                 self.gt = build_table(df, self.gt, fs, self.sel["content"].get("kappa", 50.0))
             self.content.fit(U, M, Y, self.gt)
@@ -315,16 +315,16 @@ class Stage1Predictor:
         return np.array([self.mf.has_item(m) for m in items])
 
     def predict(self, users, items):
-        """모델 안에 있는 사용자(MovieLens)용."""
+        """For users inside the model (MovieLens)."""
         n = len(users)
         mfp = self.mf.predict(users, items) if self.use_mf else np.zeros(n)
         cp = self.content.predict(users, items) if self.use_content else np.zeros(n)
         return self._combine(mfp, cp, [self.n_hist.get(u, 0) for u in users])
 
     def predict_new_user(self, hist_items, hist_y, items, genre_table=None, allow_content_fallback=False):
-        """모델 밖의 사용자(MovieTweetings/Beliefs): 과거 평점으로 fold-in 후 예측.
-        반환: (예측, MF사용가능여부)
-        - MF가 그 사람/영화를 다룰 수 없으면: allow_content_fallback=True 일 때만 Content 로 대체, 아니면 NaN.
+        """For users outside the model (MovieTweetings/Beliefs): fold in from past ratings, then predict.
+        Returns: (prediction, whether MF was usable)
+        - if MF cannot handle that person/movie: fall back to Content only when allow_content_fallback=True, otherwise NaN.
         """
         gt = genre_table or self.gt
         fs = self.sel["content"].get("feature_set", "G") if self.use_content else "G"
@@ -339,7 +339,7 @@ class Stage1Predictor:
         vec = self.mf.fold_in(hist_items, hist_y)
         known = self.mf_knows_item(items) & (vec is not None)
         mfp = self.mf.predict_folded(vec, items) if vec is not None else np.zeros(n)
-        # 평점 수 구간(H2_bucket)은 'MF가 그 사람에 대해 아는 정도'이므로 MF가 아는 영화의 과거 평점 수로 센다
+        # the rating-count bucket (H2_bucket) reflects 'how much MF knows about the person', so it counts past ratings of movies known to MF
         n_mf_known = int(sum(self.mf.has_item(m) for m in hist_items))
         out = self._combine(mfp, cp, np.full(n, n_mf_known))
         fallback = cp if (allow_content_fallback and self.use_content) else np.full(n, np.nan)
@@ -351,7 +351,7 @@ class Stage1Predictor:
 # ----------------------------------------------------------------------------------------------
 def hybrid(mf_pred, content_pred, alpha, mf_available=None):
     """alpha * MF + (1-alpha) * Content.
-    mf_available=False 인 칸(MF가 그 영화를 모름 = 콜드스타트)은 Content 예측만 쓴다."""
+    Cells with mf_available=False (MF does not know the movie = cold start) use the Content prediction only."""
     mf_pred, content_pred = np.asarray(mf_pred, float), np.asarray(content_pred, float)
     out = alpha * mf_pred + (1 - alpha) * content_pred
     if mf_available is not None:

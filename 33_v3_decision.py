@@ -1,16 +1,16 @@
-"""[3차] 최종 점수 식 고르기 -> 3차 고정.
+"""[version 3] Choose the final scoring formula -> freeze v3.
 
-후보 식:  Final = (4명 예측 평균) + beta * (4명 중 최저 예측) - lambda * (Strong Dislike 위험)
-  beta=0 이면 1·2차와 같은 식. beta 가 크면 Least Misery 의 장점(한 명도 소외시키지 않기)을 섞는다.
+Candidate formula:  Final = (mean of 4 predictions) + beta * (lowest of the 4 predictions) - lambda * (Strong Dislike risk)
+  beta=0 is the same formula as v1/v2. A larger beta mixes in the strength of Least Misery (nobody is left out).
 
-고르는 데이터 (둘 다 '정답을 보고 골라도 되는' 연습용):
-  (a) Validation 649그룹 (공식 49 + 연습 600)          : Train 으로 학습한 모델의 예측
-  (b) 1번 새 시험지 500그룹 (2차 비교에 이미 사용됨)     : Train+Validation 으로 학습한 모델의 예측
-      -> 2차가 진 이유(Validation 기간에 맞춘 lambda 가 시험 기간에선 너무 셈)를 줄이려고 시험 기간 그룹도 함께 본다.
-규칙: 두 묶음의 balanced score 평균이 최대인 (beta, lambda). 동점이면 beta+lambda 가 작은 쪽.
-최종 채점은 사람까지 겹치지 않는 2번 새 시험지로만 한다.
+Selection data (both are practice data where 'choosing after seeing the answers is allowed'):
+  (a) Validation, 649 groups (49 official + 600 practice)      : predictions of the model trained on Train
+  (b) fresh holdout 1, 500 groups (already used for the v2 comparison) : predictions of the model trained on Train+Validation
+      -> test-period groups are included to reduce why v2 lost (a lambda fitted to the Validation period was too strong in the test period).
+Rule: the (beta, lambda) with the highest average balanced score over the two sets. Ties go to the smaller beta+lambda.
+Final scoring uses only fresh holdout 2, which shares no person with the others.
 
-실행: RESULTS_DIR=results_v3 python 33_v3_decision.py
+Run: RESULTS_DIR=results_v3 python 33_v3_decision.py
 """
 import itertools
 import pickle
@@ -65,7 +65,7 @@ for gid, d in extra.groupby("group_id"):
     A.append(make_case(gid, d[["p1", "p2", "p3", "p4"]], d[["y1", "y2", "y3", "y4"]],
                        d[["thr1", "thr2", "thr3", "thr4"]].iloc[0], d.risk))
 
-# (b) 1번 새 시험지 500 (Train+Validation 으로 학습)
+# (b) fresh holdout 1, 500 groups (trained on Train+Validation)
 s1 = make_stage1(s1sel, gt, seed=SEED, results_dir=RESULTS).fit(trva)
 th_tv, ms_tv = user_thresholds(trva, P), movie_stats(trva)
 ctx_tv = RiskContext(trva, th_tv.thr, genre_lookup, risk["alpha"], trva, risk["kappa"])

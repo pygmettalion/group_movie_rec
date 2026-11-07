@@ -1,12 +1,12 @@
-"""[3차] Stage 1 다시 고르기 — Validation 으로만 (Train 학습 -> Validation 채점).
+"""[version 3] Re-select Stage 1 — on Validation only (train on Train -> score on Validation).
 
-후보
-  - MF: 1번 학습 vs 여러 번(5번, 시작점만 다르게) 학습해서 평균 (앙상블)
-  - Item-kNN: 이웃 수 k, 유사도 당김(sim_shrink) 격자
-  - 섞기 모델: H2(2차 방식) / LIN3 / LIN3_B / GBM  -> 사용자 단위 5-fold 교차검증 RMSE
-선택 규칙: 교차검증 RMSE 최소, 0.0003 이내면 더 단순한 것 (1·2차와 같음).
+Candidates
+  - MF: trained once vs trained several times (5 runs, different starting points only) and averaged (ensemble)
+  - Item-kNN: grid over the number of neighbors k and similarity shrinkage (sim_shrink)
+  - blending models: H2 (v2 style) / LIN3 / LIN3_B / GBM  -> user-grouped 5-fold cross-validated RMSE
+Selection rule: lowest cross-validated RMSE; within 0.0003, the simpler one (same as v1/v2).
 
-실행: RESULTS_DIR=results_v3 python 31_v3_stage1.py
+Run: RESULTS_DIR=results_v3 python 31_v3_stage1.py
 """
 import itertools
 import json
@@ -34,7 +34,7 @@ vU, vM, vY = va.user_id.values, va.movie_id.values, va.rating_norm.values
 v2 = json.load(open(ROOT / "results_v2" / "stage1_selection_final.json", encoding="utf-8"))
 mf_cfg, c_cfg = dict(v2["mf"]), dict(v2["content"])
 
-# ------------------------------------------------------------------ MF: 1번 vs 5번 평균
+# ------------------------------------------------------------------ MF: 1 run vs mean of 5 runs
 print("[MF] 앙상블")
 mf_preds = []
 for s in range(5):
@@ -45,11 +45,11 @@ mf_one, mf_bag = mf_preds[0], np.mean(mf_preds, 0)
 mf_rows = [dict(n_bag=1, val_rmse=rmse(vY, mf_one)), dict(n_bag=5, val_rmse=rmse(vY, mf_bag))]
 pd.DataFrame(mf_rows).to_csv(RESULTS / "v3_stage1_mf_bag.csv", index=False)
 
-# ------------------------------------------------------------------ Content (2차에서 고른 설정 그대로)
+# ------------------------------------------------------------------ Content (the setting chosen in v2, unchanged)
 table = build_table(tr, gt, c_cfg["feature_set"], c_cfg["kappa"] or 50.0)
 c_val = ContentModel(c_cfg["k_mean"], c_cfg["lam_user"], c_cfg["lam_global"]).fit(U, M, Y, table).predict(vU, vM)
 
-# ------------------------------------------------------------------ Item-kNN 격자
+# ------------------------------------------------------------------ Item-kNN grid
 print("[Item-kNN]")
 knn_rows, knn_preds = [], {}
 for k, ss in itertools.product([20, 40, 80, 160], [25.0, 100.0]):
@@ -64,7 +64,7 @@ knn_cfg = dict(k=int(kb.k), sim_shrink=float(kb.sim_shrink))
 knn_val = knn_preds[(knn_cfg["k"], knn_cfg["sim_shrink"])]
 print("kNN 선택:", knn_cfg, kb.val_rmse)
 
-# ------------------------------------------------------------------ 섞기 모델 비교 (사용자 단위 교차검증)
+# ------------------------------------------------------------------ blending model comparison (user-grouped cross-validation)
 n_user = tr.groupby("user_id").size().to_dict()
 n_item = tr.groupby("movie_id").size().to_dict()
 u_std = tr.groupby("user_id").rating_norm.std().to_dict()
@@ -103,7 +103,7 @@ def make_gbm(lr, leaves):
     return fit
 
 
-CANDIDATES = [  # (이름, MF 종류, 섞기 종류, 학습 함수)  -- 단순한 순서
+CANDIDATES = [  # (name, MF type, blend type, fit function)  -- in order of simplicity
     ("H2 + MF 1번", "one", "H2", fit_h2),
     ("H2 + MF 5번 평균", "bag", "H2", fit_h2),
     ("LIN3 + MF 5번 평균", "bag", "LIN3", fit_lin3),

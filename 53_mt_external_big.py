@@ -1,13 +1,13 @@
-"""[외부 시험 확대] 원본 MovieTweetings 로 외부 시험 그룹을 늘려서 1차 모델을 한 번 채점.
+"""[enlarging the external test] Build more external test groups from the raw MovieTweetings data and score the v1 model once.
 
-팀 전처리 규칙(prepare_team_data.py choose_groups/build_bundle)을 그대로 따른다:
-  - 'MovieLens 에도 있는 영화'(links.csv 로 IMDb->MovieLens 연결 + MovieLens Train+Validation 에 있음)만 시험 영화로 사용
-  - 사용자의 연결된 평점 중 10번째 이후 평점의 영화들 = 시험 후보가 될 수 있는 영화
-  - 4명이 공통으로 가진 시험 영화 5편 이상
-  - 각자의 과거 기록 = 그 그룹 시험 영화 중 가장 이른 평점 시각 '이전' 평점만 (연결된 과거 평점 10개 이상이어야 함)
-  - 평점 0~10 -> /10
-바꾼 것 하나: 팀 코드는 한 사람을 한 그룹에만 넣어서 44그룹뿐이었다 -> 한 사람 최대 10그룹.
-기존 44그룹의 176명은 제외. 1차 모델(results_v1_frozen)은 숫자 그대로, 한 번만 채점.
+Follows the team preprocessing rules (prepare_team_data.py choose_groups/build_bundle):
+  - only 'movies that also exist in MovieLens' are test movies (IMDb->MovieLens link via links.csv + present in MovieLens Train+Validation)
+  - movies rated from a user's 10th linked rating onward = movies that can become test candidates
+  - 4 people share >= 5 test movies
+  - each person's history = only ratings 'before' the earliest rating time among that group's test movies (needs >= 10 linked past ratings)
+  - ratings 0~10 -> /10
+One change: the team code puts each person in only one group, giving just 44 groups -> at most 10 groups per person.
+The 176 people of the existing 44 groups are excluded. The v1 model (results_v1_frozen) is used with the same numbers and scored once.
 """
 import json
 import pickle
@@ -45,7 +45,7 @@ rt = rt[~rt.user_id.isin(old_users)]
 rt["ml"] = rt.imdb.map(mapping)
 print(f"원본 평점 {len(rt):,}, 사용자 {rt.user_id.nunique():,}, MovieLens 연결 평점 {rt.ml.notna().sum():,}")
 
-# 사용자별 시험 후보 영화 (연결된 평점 중 10번째 이후)
+# test-candidate movies per user (from the 10th linked rating onward)
 cand = {}
 for u, d in rt[rt.ml.notna()].sort_values("ts").groupby("user_id"):
     if len(d) < MIN_HIST + MIN_COMMON:
@@ -81,7 +81,7 @@ for a in seeds:
         common = sorted(cand[a] & cand[trio[0]] & cand[trio[1]] & cand[trio[2]])
         if len(common) < MIN_COMMON:
             continue
-        # 각자 과거 기록 = 그 그룹 시험 영화 중 가장 이른 평점 '이전' (연결된 과거 평점 10개 이상 확인: 시각만 사용)
+        # each person's history = ratings 'before' the earliest rating of that group's test movies (check >= 10 linked past ratings: only times are used)
         ok = True
         for u in g:
             d = user_rows[u]
@@ -99,7 +99,7 @@ print(f"새 외부 시험 그룹 {len(found)}개, 사용자 {len(set(x for g, _ 
 pd.DataFrame([dict(group_id=i, users="|".join(map(str, g)), movies="|".join(map(str, c)))
               for i, (g, c) in enumerate(found, 1)]).to_csv(OUT / "MT_BIG_groups_sealed.csv", index=False)
 
-# ---------------------------------------------------------------- 1차 모델로 한 번 채점
+# ---------------------------------------------------------------- score once with the v1 model
 cfg1 = json.load(open(ROOT / "results_v1_frozen" / "FINAL_FROZEN_CONFIG.json", encoding="utf-8"))
 cfg4 = json.load(open(ROOT / "results_v4" / "FINAL_FROZEN_CONFIG.json", encoding="utf-8"))
 with open(ROOT / "results_v1_frozen" / "risk_model.pkl", "rb") as f:
@@ -113,7 +113,7 @@ GENRE_OK = set(["Action", "Adventure", "Animation", "Children's", "Comedy", "Cri
 
 
 def key_and_genre(imdb, ml):
-    """연결된 영화는 MovieLens 번호·장르, 아니면 'tt' 번호와 MovieTweetings 장르(18개 안에 있는 것만) — 팀 규칙과 같음."""
+    """Linked movies use the MovieLens id and genres; otherwise the 'tt' id and MovieTweetings genres (only those within the 18) — same as the team rule."""
     if not pd.isna(ml):
         return int(ml), gt_ml.get(int(ml))
     raw = str(mt_genre.get(imdb, "")).split("|")

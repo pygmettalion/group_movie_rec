@@ -1,13 +1,13 @@
-"""그룹 추천 점수 계산과 채점.
+"""Group recommendation scoring and evaluation.
 
 Final Score = Expected Group Satisfaction - lambda * Predicted Group Misery Risk
-  - Expected Group Satisfaction: 4명의 예측 선호 점수 평균
-  - Predicted Group Misery Risk: Stage 2 분류기가 낸 '누군가 강하게 싫어할 확률'
+  - Expected Group Satisfaction: mean of the 4 predicted preference scores
+  - Predicted Group Misery Risk: the Stage 2 classifier's 'probability that someone strongly dislikes it'
 
-채점(정답 공개 후)
-  - 평균 만족도: 추천된 영화에 4명이 실제로 준 점수(0~1)의 평균
-  - 최저 만족도: 4명 중 가장 낮게 준 사람의 점수
-  - Strong Dislike 발생: 4명 중 한 명이라도 자기 불호 기준선 이하 점수를 줬는가
+Evaluation (after the answers are revealed)
+  - average satisfaction: mean of the real scores (0~1) the 4 people gave the recommended movie
+  - minimum satisfaction: the score of the person who rated it lowest among the 4
+  - Strong Dislike occurrence: did at least one of the 4 give a score at or below their own Strong Dislike threshold
 """
 import numpy as np
 import pandas as pd
@@ -18,7 +18,7 @@ LAMBDA_GRID = [0, 0.01, 0.02, 0.03, 0.05, 0.075, 0.1, 0.15, 0.2, 0.3, 0.5, 0.75,
 
 
 def risk_proba(risk, pred, thr, share, movie_ids, mstats):
-    """kind='group': 그룹 분류기가 바로 확률 / kind='indiv': 4명 개인 확률 p_i 를 1-prod(1-p_i) 로 합침."""
+    """kind='group': the group classifier gives the probability directly / kind='indiv': combine the 4 individual probabilities p_i as 1-prod(1-p_i)."""
     if risk.get("kind", "group") == "group":
         X = group_features(pred, thr, share, movie_ids, mstats)
         return risk["model"].predict_proba(X[risk["features"]])[:, 1]
@@ -29,7 +29,7 @@ def risk_proba(risk, pred, thr, share, movie_ids, mstats):
 
 
 def build_case(group_id, users, movies, pred, true, thr, share, risk, mstats):
-    """한 그룹의 후보 영화들 정보를 하나로 묶는다. pred/true: (후보수, 4)."""
+    """Bundle the information of one group's candidate movies. pred/true: (number of candidates, 4)."""
     pred, true = np.asarray(pred, float), np.asarray(true, float)
     thr4 = np.tile(thr, (len(movies), 1))
     share4 = np.tile(share, (len(movies), 1))
@@ -57,7 +57,7 @@ def choose(case, method, lam=0.0):
 
 
 def evaluate(cases, method, lam=0.0):
-    """그룹별 결과 표. Random 은 '후보 중 아무거나'의 기대값(모든 후보 평균)."""
+    """Per-group results table. Random is the expected value of 'any candidate' (mean over all candidates)."""
     rows = []
     for c in cases:
         if method == "Random":
@@ -79,7 +79,7 @@ def summarize(df):
 
 
 def paired_bootstrap(a, b, n=5000, seed=42):
-    """같은 그룹들에서 방법 a - 방법 b 의 차이. 그룹을 다시 뽑아 95% 구간 계산."""
+    """Difference method a - method b on the same groups. Groups are resampled to compute the 95% interval."""
     rng = np.random.default_rng(seed)
     out = {}
     for k in ("avg", "min", "sd"):

@@ -1,7 +1,7 @@
-"""[4차] 최종 채점: 아무도 본 적 없는 3번 시험지(1,000그룹, 1·2번과 사람 안 겹침)에서 1차 vs 4차 한 번.
+"""[version 4] Final scoring: v1 vs v4 once on holdout 3, which nobody has seen (1,000 groups, no person shared with holdouts 1 and 2).
 
-미리 정한 약속: 4차가 1차보다 강한 불호를 더 줄이면서 평균 만족도를 확실히(95% 구간이 0 아래) 잃지 않으면 4차 채택.
-실행: python 42_v4_final.py
+Pre-registered rule: adopt v4 if it reduces Strong Dislike more than v1 without clearly losing average satisfaction (95% interval below 0).
+Run: python 42_v4_final.py
 """
 import json
 import pickle

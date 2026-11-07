@@ -1,7 +1,7 @@
-"""후보 수별 효과 분석 (모델 재학습·조정 없음, 이미 채점된 결과만 다시 나눠 봄).
+"""Effect by number of candidates (no retraining or tuning; already-scored results are only re-split).
 
-'평균 최대' 대비 1차 Risk-Aware 의 Strong Dislike 감소를, 그룹당 후보 영화 수 구간별로 계산 -> figures/fig8_by_candidates.png
-사용 데이터: 새 시험지 1·2·3번 (1차는 세 시험지 모두를 보기 전에 고정됨).
+Computes the Strong Dislike reduction of v1 Risk-Aware vs 'Average' by bins of candidate movies per group -> figures/fig8_by_candidates.png
+Data: fresh holdouts 1, 2, 3 (v1 was frozen before any of them was seen).
 """
 import sys
 from pathlib import Path

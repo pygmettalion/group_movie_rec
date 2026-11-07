@@ -1,17 +1,17 @@
-"""[4차] 팀 목표("아무도 강하게 싫어하지 않는 선택")를 직접 노리도록 '고르는 방식'을 다시 만든다.
+"""[version 4] Rebuild 'the way of choosing' to directly target the team goal ("a pick nobody strongly dislikes").
 
-1~3차와 다른 점
- (1) 고르는 기준을 팀 목표에 맞춤 (결과 보기 전에 고정):
-       Strong Dislike 발생률을 최소화한다. 단, 평균 만족도가 '평균 최대' 방식보다 0.005 넘게 떨어지면 탈락.
-       동점이면 최저 만족도가 높은 것 -> 평균 만족도가 높은 것 -> 더 단순한 것.
- (2) 거부권(veto) 규칙 후보 추가: Strong Dislike 위험이 tau 를 넘는 영화는 빼고, 남은 영화 중 평균 1등.
-     (모두 빠지면 위험이 가장 낮은 영화)
- (3) 시험 기간에 맞춘 위험 모델 후보 추가: 1·2번 시험지 사용자들의 '시험 기간 실제 평점'으로 학습.
-     1번 시험지 그룹의 위험은 2번 시험지 사람들로만 학습한 모델로, 2번은 1번 사람들로만 학습한 모델로 계산 (교차 적합).
-고르는 데이터: 이미 사용한 1·2번 시험지 1,000그룹 (시험 기간, 실제 서비스 상황과 같은 시점).
-최종 채점: 아무도 본 적 없는 3번 시험지(06 으로 봉인)에서 1차 vs 4차 한 번.
+Differences from v1-v3
+ (1) the selection criterion matches the team goal (fixed before looking at results):
+       minimize the Strong Dislike rate. However, a candidate is dropped if its average satisfaction is more than 0.005 below 'Average'.
+       Ties: higher minimum satisfaction -> higher average satisfaction -> simpler.
+ (2) a veto rule is added as a candidate: drop movies whose Strong Dislike risk exceeds tau, then take the top mean among the rest.
+     (if all are dropped, the movie with the lowest risk)
+ (3) a risk model fitted to the test period is added as a candidate: trained on the 'real test-period ratings' of holdout 1 and 2 users.
+     Risk for holdout-1 groups uses a model trained only on holdout-2 people, and vice versa (cross-fitting).
+Selection data: the already-used holdouts 1 and 2, 1,000 groups (test period, the same point in time as real use).
+Final scoring: v1 vs v4 once on holdout 3, which nobody has seen (sealed with 06).
 
-실행: python 41_v4_build.py
+Run: python 41_v4_build.py
 """
 import itertools
 import json
@@ -47,7 +47,7 @@ rows = te[te.user_id.isin(users_of[1] | users_of[2]) & te.movie_id.isin(trva.mov
 rows["h"] = np.where(rows.user_id.isin(users_of[1]), 1, 2)
 print(f"시험 기간 평점 (1·2번 시험지 사용자): {len(rows):,}건")
 
-# ---------------------------------------------------------------- 개인 예측: 1차 Stage 1 / 3차 Stage 1 (Train+Validation 학습)
+# ---------------------------------------------------------------- individual predictions: v1 Stage 1 / v3 Stage 1 (trained on Train+Validation)
 cfg1 = json.load(open(ROOT / "results_v1_frozen" / "FINAL_FROZEN_CONFIG.json", encoding="utf-8"))
 cfg3 = json.load(open(ROOT / "results_v3" / "FINAL_FROZEN_CONFIG.json", encoding="utf-8"))
 S = {"S1": make_stage1(cfg1["stage1"], gt, SEED).fit(trva),
@@ -59,16 +59,16 @@ rows["share"] = rows.user_id.map(th.share)
 rows["dis"] = (rows.rating_norm <= rows.thr).astype(int)
 print("시험 기간 개인 Strong Dislike 비율:", round(rows.dis.mean(), 4))
 
-# ---------------------------------------------------------------- 위험 모델 후보
+# ---------------------------------------------------------------- risk model candidates
 with open(ROOT / "results_v1_frozen" / "risk_model.pkl", "rb") as f:
     R1 = pickle.load(f)
 with open(ROOT / "results_v3" / "risk_model.pkl", "rb") as f:
     R3 = pickle.load(f)
 X1 = indiv_features(rows.pred_S1.values, rows.thr.values, rows.share.values, rows.movie_id.values, mstats)
-rows["p_RV1"] = R1["model"].predict_proba(X1[R1["features"]])[:, 1]          # 1차 위험 모델 (Validation 기간 학습)
+rows["p_RV1"] = R1["model"].predict_proba(X1[R1["features"]])[:, 1]          # v1 risk model (trained on the Validation period)
 X3 = indiv_features_v2(rows.pred_S3.values, rows.thr.values, rows.share.values, rows.movie_id.values,
                        rows.user_id.values, mstats, ctx)
-rows["p_RV3"] = R3["model"].predict_proba(X3[R3["features"]])[:, 1]          # 3차 위험 모델 (Validation 기간 학습)
+rows["p_RV3"] = R3["model"].predict_proba(X3[R3["features"]])[:, 1]          # v3 risk model (trained on the Validation period)
 
 feats = INDIV_V2_SETS["I_gd"]
 CLF = {"HGB(lr=0.1,leaves=7)": dict(learning_rate=0.1, max_leaf_nodes=7),
@@ -90,7 +90,7 @@ for sname in ["S1", "S3"]:
         if best is None or ll < best[0]:
             best = (ll, cname, oof)
     rows[f"p_RT_{sname}"] = best[2]
-    # 같은 행에서 Validation 학습 위험 모델과 비교 (참고)
+    # compare with the Validation-trained risk model on the same rows (reference)
     base = rows["p_RV1" if sname == "S1" else "p_RV3"]
     rt_report.append(dict(stage1=sname, classifier="Validation 학습 모델(참고)",
                           logloss=log_loss(rows.dis, np.clip(base, 1e-6, 1 - 1e-6)), auc=roc_auc_score(rows.dis, base)))
@@ -99,7 +99,7 @@ for sname in ["S1", "S3"]:
     rows[f"clf_RT_{sname}"] = best[1]
 pd.DataFrame(rt_report).to_csv(OUT / "v4_risk_models.csv", index=False)
 
-# ---------------------------------------------------------------- 그룹 단위로 묶기
+# ---------------------------------------------------------------- group the rows by group
 key = rows.set_index(["user_id", "movie_id"])
 COMBOS = {"S1+RV1": ("pred_S1", "p_RV1"), "S1+RT": ("pred_S1", "p_RT_S1"),
           "S3+RV3": ("pred_S3", "p_RV3"), "S3+RT": ("pred_S3", "p_RT_S3")}
@@ -152,7 +152,7 @@ COMPLEXITY = {"LIN": 1, "VETO": 1, "LINMIN": 2}
 
 
 def select(cs):
-    """팀 목표 기준으로 최고 후보 고르기. 반환: (후보, 결과표)"""
+    """Choose the best candidate by the team-goal criterion. Returns: (candidate, results table)"""
     res = []
     for combo, rule, a, b in CANDS:
         e = evaluate(cs, combo, rule, a, b)
@@ -165,7 +165,7 @@ def select(cs):
     return ok.iloc[0], t
 
 
-# ---------------------------------------------------------------- (참고) 정직한 성능 추정: 한쪽 시험지로 고르고 다른 쪽으로 채점
+# ---------------------------------------------------------------- (reference) honest performance estimate: choose on one holdout, score on the other
 nested = []
 for pick_h, eval_h in [(1, 2), (2, 1)]:
     best, _ = select([c for c in cases if c["h"] == pick_h])
@@ -181,13 +181,13 @@ for pick_h, eval_h in [(1, 2), (2, 1)]:
           f"1차 {v1.sd.mean():.3f} / 평균최대 {avg.sd.mean():.3f} | 평균만족 4차 {v4.avg.mean():.4f} / 1차 {v1.avg.mean():.4f}")
 pd.DataFrame(nested).to_csv(OUT / "v4_nested_estimate.csv", index=False)
 
-# ---------------------------------------------------------------- 최종 선택 (1·2번 전체) -> 고정
+# ---------------------------------------------------------------- final choice (all of holdouts 1 and 2) -> freeze
 best, table = select(cases)
 table.to_csv(OUT / "v4_selection_grid.csv", index=False)
 print(table[table.ok].sort_values(["sd", "min"], ascending=[True, False]).head(10).round(4).to_string(index=False))
 print("\n4차 선택:", best.to_dict())
 
-# 시험 기간 위험 모델을 쓰면 1·2번 사용자 전체로 다시 학습해서 고정
+# if the test-period risk model is used, retrain it on all holdout 1 and 2 users and freeze
 combo = best.combo
 sname = combo.split("+")[0]
 final = dict(version="v4", combo=combo, rule=best.rule, a=float(best.a), b=float(best.b), percentile=P,

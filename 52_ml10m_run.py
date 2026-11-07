@@ -1,11 +1,11 @@
-"""[추가 실험] MovieLens 10M 에서 1차 모델을 '숫자 그대로' 옮겨 한 번 채점.
+"""[additional experiment] Transfer the v1 model 'with the same numbers' to MovieLens 10M and score once.
 
-- Stage 1: 1차 설정(ALS k=64, reg=0.02, 8회 / Content k_mean=20, lam_user=100 / 평점 수별 섞기 비율) 그대로,
-  10M 의 Train+Validation 으로 학습만 다시.
-- 불호 기준선: 각자 Train+Validation 평점의 하위 5% (같은 규칙)
-- 위험 모델: 1M 에서 학습한 1차 위험 모델 파일을 '그대로' 사용 (다시 학습하지 않음)
-- 점수 식: 1차 (평균 - 0.75 x 위험), 4차 (평균 + 0.5 x 최저 - 3.0 x 위험)
-- 비교: 기존 추천·그룹 추천 규칙 전부. 시험 그룹은 51 에서 별점 안 보고 봉인한 것.
+- Stage 1: v1 settings (ALS k=64, reg=0.02, 8 epochs / Content k_mean=20, lam_user=100 / mixing ratio by rating count) unchanged,
+  only refit on 10M Train+Validation.
+- Strong Dislike threshold: bottom 5% of each user's Train+Validation ratings (same rule)
+- risk model: the v1 risk model trained on 1M is used 'as is' (not retrained)
+- scoring formulas: v1 (mean - 0.75 x risk), v4 (mean + 0.5 x min - 3.0 x risk)
+- comparison: all existing recommendation and group-recommendation rules. Test groups are those sealed in 51 without looking at ratings.
 """
 import json
 import pickle
@@ -41,7 +41,7 @@ top_rated = (agg["sum"] + 20 * trva.rating_norm.mean()) / (agg["count"] + 20)
 truth = te.set_index(["user_id", "movie_id"]).rating_norm
 truth = truth[~truth.index.duplicated()]
 
-# (참고) 10M Test 기간 개인 예측 오차
+# (reference) individual prediction error in the 10M Test period
 tw = te[te.user_id.isin(trva.user_id) & te.movie_id.isin(trva.movie_id)].sample(200000, random_state=0)
 rm = float(np.sqrt(np.mean((tw.rating_norm - s1.predict(tw.user_id.values, tw.movie_id.values)) ** 2)) * 4.5)
 um = float(np.sqrt(np.mean((tw.rating_norm - tw.user_id.map(trva.groupby("user_id").rating_norm.mean())) ** 2)) * 4.5)

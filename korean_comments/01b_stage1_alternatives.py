@@ -1,0 +1,166 @@
+"""Stage 1 추가 후보 비교 -> 최종 Stage 1 구조 결정.
+
+01_stage1_select.py 는 문서에 적힌 후보(SGD-MF, Content, alpha 하나로 섞는 Hybrid)를 비교했다.
+여기서는 '더 타당한 구조가 있는지' 데이터로 확인한다.
+
+ A. MF 학습 방식: ALS(번갈아 정확히 풀기) vs SGD. 그리고 k=0(취향 좌표 없이 사람·영화 평균만) 기준 모델.
+    -> 좌표(latent factor)가 실제로 도움이 되는지 확인.
+ B. Hybrid 섞는 구조
+    H1 global : 모두에게 같은 alpha                        (문서 기본안)
+    H2 bucket : 과거 평점 수(적음/보통/많음)에 따라 alpha 다르게  ("기록 많은 사람은 MF 를 더 믿자")
+    H3 stack  : a + b*MF + c*Content  (보정까지 하는 선형 결합)
+    -> 섞는 비율을 Validation 으로 '학습'하므로, 공정하게 Validation 사용자를 5묶음으로 나눠
+       4묶음으로 비율을 정하고 나머지 1묶음으로 채점(교차검증)한다.
+ 선택 규칙: 교차검증 RMSE 최소. 단, 차이가 0.0003(별점 약 0.001개) 미만이면 더 단순한 구조.
+"""
+import itertools
+import sys
+
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import GroupKFold
+
+sys.path.insert(0, "src")
+from common import RESULTS, SEED, load_json, load_movielens, mae, movie_genre_table, rmse, save_json  # noqa: E402
+from models import ALSMF, MF, ContentModel  # noqa: E402
+
+r, _ = load_movielens()
+tr = r[r.split == "train"]
+va = r[(r.split == "validation") & r.user_id.isin(tr.user_id) & r.movie_id.isin(tr.movie_id)]
+gt = movie_genre_table(r)
+U, M, Y = tr.user_id.values, tr.movie_id.values, tr.rating_norm.values
+vU, vM, vY = va.user_id.values, va.movie_id.values, va.rating_norm.values
+base_sel = load_json("stage1_selection.json")
+
+# ------------------------------------------------------------------ A. ALS MF (+ k=0 기준 모델)
+print("[ALS-MF] grid search")
+rows = []
+for k, reg in itertools.product([0, 4, 8, 16, 32, 64], [0.01, 0.015, 0.02, 0.03, 0.05, 0.1]):
+    m = ALSMF(k=k, reg=reg, epochs=60, seed=SEED).fit(U, M, Y, val=(vU, vM, vY), patience=2)
+    p = m.predict(vU, vM)
+    rows.append(dict(k=k, reg=reg, best_iter=m.best_epoch, val_rmse=rmse(vY, p), val_mae=mae(vY, p)))
+    print("  ", rows[-1])
+als_df = pd.DataFrame(rows).sort_values("val_rmse")
+# 최고 k 가 격자 끝(64)이면 2배(128)도 확인. 0.0003 이상 좋아질 때만 큰 k 채택 (단순한 쪽 우선, 다른 선택과 같은 규칙)
+top = als_df.iloc[0]
+if top.k == max(r_["k"] for r_ in rows):
+    for reg in [top.reg, round(top.reg * 1.25, 4)]:
+        m = ALSMF(k=int(top.k * 2), reg=reg, epochs=40, seed=SEED).fit(U, M, Y, val=(vU, vM, vY), patience=2)
+        p = m.predict(vU, vM)
+        gain = top.val_rmse - rmse(vY, p)
+        rows.append(dict(k=int(top.k * 2), reg=reg, best_iter=m.best_epoch, val_rmse=rmse(vY, p), val_mae=mae(vY, p),
+                         note=f"격자 끝 확인: k={int(top.k)} 대비 {gain:+.5f}" + (" -> 채택" if gain > 0.0003 else " -> 0.0003 미만, 작은 k 유지")))
+        print("  ", rows[-1])
+    big = pd.DataFrame(rows)
+    big = big[big.k == top.k * 2]
+    als_df = pd.DataFrame(rows).sort_values("val_rmse")
+    if not (top.val_rmse - big.val_rmse.min() > 0.0003):
+        als_df = pd.concat([als_df[als_df.k != top.k * 2], als_df[als_df.k == top.k * 2]])   # 작은 k 를 맨 위로
+als_df.to_csv(RESULTS / "stage1b_als_search.csv", index=False)
+als_best = als_df.iloc[0].to_dict()
+bias_best = als_df[als_df.k == 0].iloc[0].to_dict()
+print("ALS 최고:", als_best, "\nk=0(편향만) 최고:", bias_best)
+
+sgd = base_sel["mf"]
+sgd_rmse = base_sel["validation_rmse"]["MF"]
+if als_best["val_rmse"] < sgd_rmse:
+    mf_choice = dict(type="als", k=int(als_best["k"]), reg=als_best["reg"], epochs=int(als_best["best_iter"]), lr=0.0)
+    mf_model = ALSMF(k=mf_choice["k"], reg=mf_choice["reg"], epochs=mf_choice["epochs"], seed=SEED).fit(U, M, Y)
+else:
+    mf_choice = dict(type="sgd", **sgd)
+    mf_model = MF(k=sgd["k"], lr=sgd["lr"], reg=sgd["reg"], epochs=sgd["epochs"], seed=SEED).fit(U, M, Y)
+mf_val = mf_model.predict(vU, vM)
+print("MF 선택:", mf_choice, "val RMSE", rmse(vY, mf_val))
+
+# Content: 01 의 최적값이 탐색 범위 '끝'(k_mean=20, lam_user=100)에 걸렸으므로 범위를 넓혀 다시 확인
+print("\n[Content] 범위 확장 탐색 (01 최적값이 격자 끝이었음)")
+c = base_sel["content"]
+c_rows = [dict(**c, val_rmse=base_sel["validation_rmse"]["Content"])]
+for k_mean, lam_user in itertools.product([20, 50, 100, 200], [100, 300, 1000, 3000]):
+    cm = ContentModel(k_mean, lam_user, c["lam_global"]).fit(U, M, Y, gt)
+    c_rows.append(dict(k_mean=k_mean, lam_user=lam_user, lam_global=c["lam_global"],
+                       val_rmse=rmse(vY, cm.predict(vU, vM))))
+c_ext = pd.DataFrame(c_rows).drop_duplicates(["k_mean", "lam_user", "lam_global"]).sort_values("val_rmse")
+c_ext.to_csv(RESULTS / "stage1b_content_extended.csv", index=False)
+print(c_ext.head(6).to_string(index=False))
+c = {k: float(v) for k, v in c_ext.iloc[0][["k_mean", "lam_user", "lam_global"]].items()}
+content = ContentModel(c["k_mean"], c["lam_user"], c["lam_global"]).fit(U, M, Y, gt)
+c_val = content.predict(vU, vM)
+
+# ------------------------------------------------------------------ B. Hybrid 구조 비교 (교차검증)
+n_hist = tr.groupby("user_id").size()
+BUCKETS = [0, 50, 200, np.inf]           # 과거 평점 수: <50 / 50~199 / 200+
+bucket = np.digitize(va.user_id.map(n_hist).to_numpy(), BUCKETS[1:-1])
+ALPHAS = np.round(np.arange(0, 1.0001, 0.05), 2)
+
+
+def fit_global(i):
+    return min(ALPHAS, key=lambda a: np.mean((vY[i] - (a * mf_val[i] + (1 - a) * c_val[i])) ** 2))
+
+
+def fit_bucket(i):
+    out = {}
+    for b in range(len(BUCKETS) - 1):
+        j = i[bucket[i] == b]
+        out[b] = fit_global(j) if len(j) else fit_global(i)
+    return out
+
+
+def fit_stack(i):
+    X = np.column_stack([np.ones(len(i)), mf_val[i], c_val[i]])
+    return np.linalg.lstsq(X, vY[i], rcond=None)[0]
+
+
+def apply(kind, prm, i):
+    if kind == "H1_global":
+        return prm * mf_val[i] + (1 - prm) * c_val[i]
+    if kind == "H2_bucket":
+        a = np.array([prm[b] for b in bucket[i]])
+        return a * mf_val[i] + (1 - a) * c_val[i]
+    return prm[0] + prm[1] * mf_val[i] + prm[2] * c_val[i]
+
+
+FITTERS = {"H1_global": fit_global, "H2_bucket": fit_bucket, "H3_stack": fit_stack}
+cv = GroupKFold(n_splits=5)
+cv_rows = []
+for kind, fitter in FITTERS.items():
+    oof = np.zeros(len(vY))
+    for a_idx, b_idx in cv.split(vY, groups=vU):
+        oof[b_idx] = apply(kind, fitter(a_idx), b_idx)
+    full = fitter(np.arange(len(vY)))
+    cv_rows.append(dict(structure=kind, cv_rmse=rmse(vY, oof), cv_mae=mae(vY, oof),
+                        params=str(full if not isinstance(full, np.ndarray) else np.round(full, 4).tolist())))
+# 단일 모델도 같은 표에 (Validation 에서 따로 '학습'하는 게 없으므로 그대로 채점)
+cv_rows += [dict(structure="MF only", cv_rmse=rmse(vY, mf_val), cv_mae=mae(vY, mf_val), params=str(mf_choice)),
+            dict(structure="Content only", cv_rmse=rmse(vY, c_val), cv_mae=mae(vY, c_val), params=str(c)),
+            dict(structure="k=0 편향만(참고)", cv_rmse=bias_best["val_rmse"], cv_mae=bias_best["val_mae"], params="")]
+cv_df = pd.DataFrame(cv_rows)
+cv_df.to_csv(RESULTS / "stage1b_structure_compare.csv", index=False)
+print("\n", cv_df.to_string(index=False))
+
+# 선택: 단순한 순서 = MF only / Content only (0개) < H1 (1개) < H3 (3개) < H2 (버킷 수)
+order = ["MF only", "Content only", "H1_global", "H3_stack", "H2_bucket"]
+scores = cv_df.set_index("structure").cv_rmse
+best_val = min(scores[o] for o in order)
+chosen = next(o for o in order if scores[o] <= best_val + 0.0003)
+print("\n최종 Stage 1 구조:", chosen)
+
+full_params = {k: FITTERS[k](np.arange(len(vY))) for k in FITTERS}
+sel = dict(
+    chosen_model={"MF only": "MF", "Content only": "Content", "H1_global": "Hybrid", "H2_bucket": "Hybrid",
+                  "H3_stack": "Hybrid"}[chosen],
+    structure=chosen, mf=mf_choice, content=c,
+    alpha={"MF only": 1.0, "Content only": 0.0}.get(chosen, None),
+    hybrid_params=None,
+    bucket_edges=[0, 50, 200],
+    validation_scores=cv_df.set_index("structure").cv_rmse.to_dict(),
+    rule="교차검증 RMSE 최소, 0.0003 이내면 더 단순한 구조",
+)
+if chosen == "H1_global":
+    sel["alpha"] = float(full_params["H1_global"])
+elif chosen == "H2_bucket":
+    sel["hybrid_params"] = {str(k): float(v) for k, v in full_params["H2_bucket"].items()}
+elif chosen == "H3_stack":
+    sel["hybrid_params"] = [float(x) for x in full_params["H3_stack"]]
+save_json(sel, "stage1_selection_final.json")
+print(sel)

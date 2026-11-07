@@ -1,6 +1,6 @@
-"""보고서/발표용 그래프 만들기 -> figures/*.png  (이미 저장된 results 파일만 읽음, 모델 재학습 없음)
+"""Make figures for the report/presentation -> figures/*.png  (reads only saved results files; no model retraining)
 
-matplotlib: 파이썬 그래프 라이브러리. 한글 표시를 위해 Noto Sans CJK KR 글꼴을 지정한다(없으면 기본 글꼴).
+matplotlib: Python plotting library. The Noto Sans CJK KR font is set to display Korean text (default font if unavailable).
 """
 import json
 from pathlib import Path
@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib import font_manager
 
-matplotlib.use("Agg")   # 화면 없이 파일로만 저장
+matplotlib.use("Agg")   # save to file only, no display
 ROOT = Path(__file__).resolve().parent
 FIG = ROOT / "figures"
 FIG.mkdir(exist_ok=True)
@@ -29,7 +29,7 @@ def bar_labels(ax, bars, fmt):
                 fontsize=10, color=INK)
 
 
-# ---------------------------------------------------------------- 1. 왜 우리 모델인가 (핵심 그래프)
+# ---------------------------------------------------------------- 1. why our model (key figure)
 s = pd.read_csv(ROOT / "results_v3" / "why_ours_summary.csv")
 names = {"Random (아무거나)": "아무거나", "Popular (인기순)": "인기순", "Top-rated (평점순)": "평점순",
          "Host (한 사람 계정)": "한 사람\n계정", "Average (평균 최대)": "Average\n(평균)", "Ours (Risk-Aware)": "우리 모델",
@@ -55,7 +55,7 @@ fig.tight_layout(rect=(0, 0.04, 1, 0.94))
 fig.savefig(FIG / "fig1_why_ours.png", dpi=180)
 plt.close(fig)
 
-# ---------------------------------------------------------------- 2. Stage 1 개인 예측 모델 비교
+# ---------------------------------------------------------------- 2. Stage 1 individual prediction model comparison
 v1c = pd.read_csv(ROOT / "results_v1_frozen" / "stage1b_structure_compare.csv").set_index("structure").cv_rmse
 v1a = pd.read_csv(ROOT / "results_v1_frozen" / "stage1_compare.csv").set_index("model").val_rmse
 v2c = pd.read_csv(ROOT / "results_v2" / "v2_stage1_structure_compare.csv").set_index("structure").cv_rmse
@@ -78,7 +78,7 @@ fig.tight_layout(rect=(0, 0.04, 1, 1))
 fig.savefig(FIG / "fig2_stage1_models.png", dpi=180)
 plt.close(fig)
 
-# ---------------------------------------------------------------- 3. lambda 선택 (1차)
+# ---------------------------------------------------------------- 3. lambda selection (v1)
 lam = pd.read_csv(ROOT / "results_v1_frozen" / "stage3_lambda_search.csv")
 x = range(len(lam))
 fig, axes = plt.subplots(2, 1, figsize=(10, 6), sharex=True)
@@ -98,7 +98,7 @@ fig.tight_layout()
 fig.savefig(FIG / "fig3_lambda_tradeoff.png", dpi=180)
 plt.close(fig)
 
-# ---------------------------------------------------------------- 4. Strong Dislike 위험 모델 비교
+# ---------------------------------------------------------------- 4. Strong Dislike risk model comparison
 r = pd.read_csv(ROOT / "results_v1_frozen" / "stage2_risk_search.csv")
 r = r[r.percentile == 5]
 best = r.sort_values("logloss").groupby(["structure", "features"]).head(1)
@@ -122,7 +122,7 @@ fig.tight_layout(rect=(0, 0.04, 1, 1))
 fig.savefig(FIG / "fig4_risk_model.png", dpi=180)
 plt.close(fig)
 
-# ---------------------------------------------------------------- 5. Strong Dislike 기준 동점 문제
+# ---------------------------------------------------------------- 5. Strong Dislike threshold tie problem
 import sys  # noqa: E402
 sys.path.insert(0, str(ROOT / "src"))
 from common import load_movielens  # noqa: E402
@@ -131,10 +131,10 @@ _r, _ = load_movielens()
 _tr = _r[_r.split == "train"]
 pct = [5, 10, 15, 20, 25]
 inclusive, fixed = [], []
-for p in pct:   # Train 기간 사용자별로 'Strong Dislike로 잡힌 비율'의 평균
-    q = _tr.groupby("user_id").rating_norm.quantile(p / 100)          # 보통 백분위 공식
+for p in pct:   # mean, over users in the Train period, of the 'share flagged as Strong Dislike'
+    q = _tr.groupby("user_id").rating_norm.quantile(p / 100)          # usual percentile formula
     inclusive.append(float((_tr.rating_norm <= _tr.user_id.map(q)).groupby(_tr.user_id).mean().mean() * 100))
-    fixed.append(float(user_thresholds(_tr, p).share.mean() * 100))   # 동점을 고려한 공식 (실제 사용)
+    fixed.append(float(user_thresholds(_tr, p).share.mean() * 100))   # tie-aware formula (actually used)
 fig, ax = plt.subplots(figsize=(8, 4))
 xi = range(len(pct))
 ax.plot(xi, pct, color=MUTED, ls="--", label="목표 (하위 p%)")
@@ -149,7 +149,7 @@ fig.tight_layout()
 fig.savefig(FIG / "fig5_dislike_threshold.png", dpi=180)
 plt.close(fig)
 
-# ---------------------------------------------------------------- 6. 1·2·3차 버전 비교 (2번 시험지)
+# ---------------------------------------------------------------- 6. v1/v2/v3 comparison (test set 2)
 v3 = json.load(open(ROOT / "results_v3" / "V3_FINAL_RESULTS.json", encoding="utf-8"))
 t = pd.DataFrame(v3["p5"]["table"])
 t = t[t.method.isin(["Average", "Final"])]
@@ -165,7 +165,7 @@ fig.savefig(FIG / "fig6_versions.png", dpi=180)
 plt.close(fig)
 print("저장:", sorted(p.name for p in FIG.glob("*.png")))
 
-# ---------------------------------------------------------------- 7. 4차 최종 (3번 새 시험지)
+# ---------------------------------------------------------------- 7. v4 final (fresh test set 3)
 v4 = json.load(open(ROOT / "results_v4" / "V4_FINAL_RESULTS.json", encoding="utf-8"))
 s4 = pd.DataFrame(v4["summary"])
 order4 = ["아무거나", "인기순", "평점순", "한 사람 계정", "Least Misery", "평균 최대", "1차 Risk-Aware", "4차 (최종 후보)"]

@@ -1,7 +1,7 @@
-"""공통 도구: 데이터 읽기, 장르 벡터, 채점 함수.
+"""Shared tools: data loading, genre vectors, scoring functions.
 
-쉽게 말하면: 모든 단계가 같이 쓰는 '공용 서랍'이다.
-- 평점은 전부 0~1 사이로 맞춘 rating_norm 을 쓴다 (데이터셋마다 별점 범위가 달라서).
+In plain words: the 'shared drawer' that every stage uses.
+- All ratings use rating_norm, rescaled to 0~1 (each dataset has a different star range).
 """
 from pathlib import Path
 import json
@@ -11,7 +11,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
-RESULTS = Path(os.environ.get("RESULTS_DIR", ROOT / "results"))  # 2차 버전은 RESULTS_DIR=results_v2
+RESULTS = Path(os.environ.get("RESULTS_DIR", ROOT / "results"))  # version 2 uses RESULTS_DIR=results_v2
 RESULTS.mkdir(exist_ok=True)
 
 GENRES = ['Action', 'Adventure', 'Animation', "Children's", 'Comedy', 'Crime', 'Documentary',
@@ -46,7 +46,7 @@ def load_beliefs():
 
 
 def genre_vector(genres):
-    """장르 문자열 'Action|Comedy' -> 18칸짜리 벡터. 합이 1이 되도록 나눈다(장르 '구성비')."""
+    """Genre string 'Action|Comedy' -> an 18-slot vector, divided so that it sums to 1 (genre 'composition')."""
     v = np.zeros(len(GENRES))
     if isinstance(genres, str):
         for g in genres.split("|"):
@@ -57,7 +57,7 @@ def genre_vector(genres):
 
 
 def movie_genre_table(*frames):
-    """여러 평점표에서 movie_id -> 장르벡터 사전을 만든다."""
+    """Build a movie_id -> genre vector dictionary from several rating tables."""
     table = {}
     for f in frames:
         for mid, g in f[["movie_id", "genres"]].drop_duplicates("movie_id").itertuples(index=False):
@@ -88,7 +88,7 @@ def load_json(name):
 
 
 def group_rows(groups, split):
-    """그룹표에서 (group_id, [4명], [후보 영화들]) 목록을 꺼낸다."""
+    """Extract a list of (group_id, [4 users], [candidate movies]) from a group table."""
     out = []
     col = f"{split}_movie_ids"
     for row in groups.itertuples(index=False):

@@ -1,12 +1,12 @@
-"""Stage 3: 위험 벌점 크기 lambda 고르기 -> 전체 모델 고정(freeze).
+"""Stage 3: choose the risk-penalty size lambda -> freeze the whole model.
 
-공식 Validation 그룹 49개 + 추가 연습 그룹(02 에서 교차 적합으로 만든 것)에서, 각 그룹의 Validation 후보 영화
-(4명 모두 실제 평점 있음) 중 모델이 1편을 고르면 그때 실제 평점을 공개해서 채점한다.
-공식 그룹만 쓴 결과도 함께 저장해서 두 결과가 비슷한 방향인지 확인한다.
+On the 49 official Validation groups + the extra practice groups (cross-fitted in 02), the model picks one movie from each group's
+Validation candidates (all 4 members have real ratings), and only then is the real rating revealed for scoring.
+The result on the official groups alone is also saved, to check that both point in a similar direction.
 
-lambda 선택 규칙 (결과 보기 전에 정함)
-  balanced_score = (평균 만족도 + 최저 만족도 + (1 - Strong Dislike 발생률)) / 3 이 최대인 lambda
-  -> 세 가지 목표를 똑같은 비중으로 본다. 동점이면 더 작은 lambda (덜 과감한 쪽).
+lambda selection rule (fixed before looking at results)
+  the lambda that maximizes balanced_score = (average satisfaction + minimum satisfaction + (1 - Strong Dislike rate)) / 3
+  -> the three goals get equal weight. Ties go to the smaller lambda (the less aggressive one).
 """
 import pickle
 import sys
@@ -40,7 +40,7 @@ for gid, users, movies in group_rows(groups, "validation"):
                             th.share.loc[users].to_numpy(), risk, mstats))
 print(f"Validation 그룹 {len(cases)}개, 후보 영화 평균 {np.mean([len(c['movies']) for c in cases]):.1f}편")
 
-# 추가 연습 그룹 (위험 점수는 그 사람들을 학습에 안 쓴 분류기로 이미 계산됨)
+# extra practice groups (risk scores already computed by a classifier that never trained on those people)
 extra = pd.read_csv(RESULTS / "stage2_extra_val_groups.csv")
 extra_cases = []
 for gid_, d in extra.groupby("group_id"):

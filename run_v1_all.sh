@@ -1,5 +1,5 @@
 #!/bin/bash
-# 1차(최종) 모델 전체를 처음부터 재현: 결과는 RESULTS_DIR (기본 results) 에 저장
+# Reproduce the whole v1 (final) model from scratch: results are saved to RESULTS_DIR (default: results)
 set -e
 python3 01_stage1_select.py         > "${RESULTS_DIR:-results}/log_stage1.txt"   2>&1
 python3 01b_stage1_alternatives.py  > "${RESULTS_DIR:-results}/log_stage1b.txt"  2>&1

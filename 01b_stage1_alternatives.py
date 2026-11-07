@@ -1,17 +1,17 @@
-"""Stage 1 추가 후보 비교 -> 최종 Stage 1 구조 결정.
+"""Compare additional Stage 1 candidates -> decide the final Stage 1 structure.
 
-01_stage1_select.py 는 문서에 적힌 후보(SGD-MF, Content, alpha 하나로 섞는 Hybrid)를 비교했다.
-여기서는 '더 타당한 구조가 있는지' 데이터로 확인한다.
+01_stage1_select.py compared the candidates written in the design doc (SGD-MF, Content, Hybrid with a single alpha).
+Here we check with data whether 'a more reasonable structure exists'.
 
- A. MF 학습 방식: ALS(번갈아 정확히 풀기) vs SGD. 그리고 k=0(취향 좌표 없이 사람·영화 평균만) 기준 모델.
-    -> 좌표(latent factor)가 실제로 도움이 되는지 확인.
- B. Hybrid 섞는 구조
-    H1 global : 모두에게 같은 alpha                        (문서 기본안)
-    H2 bucket : 과거 평점 수(적음/보통/많음)에 따라 alpha 다르게  ("기록 많은 사람은 MF 를 더 믿자")
-    H3 stack  : a + b*MF + c*Content  (보정까지 하는 선형 결합)
-    -> 섞는 비율을 Validation 으로 '학습'하므로, 공정하게 Validation 사용자를 5묶음으로 나눠
-       4묶음으로 비율을 정하고 나머지 1묶음으로 채점(교차검증)한다.
- 선택 규칙: 교차검증 RMSE 최소. 단, 차이가 0.0003(별점 약 0.001개) 미만이면 더 단순한 구조.
+ A. MF training method: ALS (alternating exact solves) vs SGD. Plus a k=0 baseline (user/movie biases only, no taste factors).
+    -> checks whether latent factors actually help.
+ B. Hybrid mixing structure
+    H1 global : the same alpha for everyone                          (design-doc default)
+    H2 bucket : alpha depends on the number of past ratings (few/medium/many)  ("trust MF more for users with long history")
+    H3 stack  : a + b*MF + c*Content  (linear combination that also recalibrates)
+    -> Because the mixing ratio is 'learned' on Validation, Validation users are split into 5 folds for fairness:
+       the ratio is fit on 4 folds and scored on the remaining fold (cross-validation).
+ Selection rule: lowest cross-validated RMSE. If the gap is below 0.0003 (about 0.001 stars), take the simpler structure.
 """
 import itertools
 import sys
@@ -32,7 +32,7 @@ U, M, Y = tr.user_id.values, tr.movie_id.values, tr.rating_norm.values
 vU, vM, vY = va.user_id.values, va.movie_id.values, va.rating_norm.values
 base_sel = load_json("stage1_selection.json")
 
-# ------------------------------------------------------------------ A. ALS MF (+ k=0 기준 모델)
+# ------------------------------------------------------------------ A. ALS MF (+ k=0 baseline)
 print("[ALS-MF] grid search")
 rows = []
 for k, reg in itertools.product([0, 4, 8, 16, 32, 64], [0.01, 0.015, 0.02, 0.03, 0.05, 0.1]):
@@ -41,7 +41,7 @@ for k, reg in itertools.product([0, 4, 8, 16, 32, 64], [0.01, 0.015, 0.02, 0.03,
     rows.append(dict(k=k, reg=reg, best_iter=m.best_epoch, val_rmse=rmse(vY, p), val_mae=mae(vY, p)))
     print("  ", rows[-1])
 als_df = pd.DataFrame(rows).sort_values("val_rmse")
-# 최고 k 가 격자 끝(64)이면 2배(128)도 확인. 0.0003 이상 좋아질 때만 큰 k 채택 (단순한 쪽 우선, 다른 선택과 같은 규칙)
+# If the best k is at the grid edge (64), also try 2x (128). Adopt the larger k only if it improves by >= 0.0003 (prefer simpler, same rule as other choices)
 top = als_df.iloc[0]
 if top.k == max(r_["k"] for r_ in rows):
     for reg in [top.reg, round(top.reg * 1.25, 4)]:
@@ -55,7 +55,7 @@ if top.k == max(r_["k"] for r_ in rows):
     big = big[big.k == top.k * 2]
     als_df = pd.DataFrame(rows).sort_values("val_rmse")
     if not (top.val_rmse - big.val_rmse.min() > 0.0003):
-        als_df = pd.concat([als_df[als_df.k != top.k * 2], als_df[als_df.k == top.k * 2]])   # 작은 k 를 맨 위로
+        als_df = pd.concat([als_df[als_df.k != top.k * 2], als_df[als_df.k == top.k * 2]])   # put the smaller k on top
 als_df.to_csv(RESULTS / "stage1b_als_search.csv", index=False)
 als_best = als_df.iloc[0].to_dict()
 bias_best = als_df[als_df.k == 0].iloc[0].to_dict()
@@ -72,7 +72,7 @@ else:
 mf_val = mf_model.predict(vU, vM)
 print("MF 선택:", mf_choice, "val RMSE", rmse(vY, mf_val))
 
-# Content: 01 의 최적값이 탐색 범위 '끝'(k_mean=20, lam_user=100)에 걸렸으므로 범위를 넓혀 다시 확인
+# Content: the best value from 01 hit the 'edge' of the search range (k_mean=20, lam_user=100), so widen the range and re-check
 print("\n[Content] 범위 확장 탐색 (01 최적값이 격자 끝이었음)")
 c = base_sel["content"]
 c_rows = [dict(**c, val_rmse=base_sel["validation_rmse"]["Content"])]
@@ -87,9 +87,9 @@ c = {k: float(v) for k, v in c_ext.iloc[0][["k_mean", "lam_user", "lam_global"]]
 content = ContentModel(c["k_mean"], c["lam_user"], c["lam_global"]).fit(U, M, Y, gt)
 c_val = content.predict(vU, vM)
 
-# ------------------------------------------------------------------ B. Hybrid 구조 비교 (교차검증)
+# ------------------------------------------------------------------ B. Hybrid structure comparison (cross-validation)
 n_hist = tr.groupby("user_id").size()
-BUCKETS = [0, 50, 200, np.inf]           # 과거 평점 수: <50 / 50~199 / 200+
+BUCKETS = [0, 50, 200, np.inf]           # number of past ratings: <50 / 50~199 / 200+
 bucket = np.digitize(va.user_id.map(n_hist).to_numpy(), BUCKETS[1:-1])
 ALPHAS = np.round(np.arange(0, 1.0001, 0.05), 2)
 
@@ -130,7 +130,7 @@ for kind, fitter in FITTERS.items():
     full = fitter(np.arange(len(vY)))
     cv_rows.append(dict(structure=kind, cv_rmse=rmse(vY, oof), cv_mae=mae(vY, oof),
                         params=str(full if not isinstance(full, np.ndarray) else np.round(full, 4).tolist())))
-# 단일 모델도 같은 표에 (Validation 에서 따로 '학습'하는 게 없으므로 그대로 채점)
+# single models go in the same table too (nothing is 'learned' on Validation, so they are scored as is)
 cv_rows += [dict(structure="MF only", cv_rmse=rmse(vY, mf_val), cv_mae=mae(vY, mf_val), params=str(mf_choice)),
             dict(structure="Content only", cv_rmse=rmse(vY, c_val), cv_mae=mae(vY, c_val), params=str(c)),
             dict(structure="k=0 편향만(참고)", cv_rmse=bias_best["val_rmse"], cv_mae=bias_best["val_mae"], params="")]
@@ -138,7 +138,7 @@ cv_df = pd.DataFrame(cv_rows)
 cv_df.to_csv(RESULTS / "stage1b_structure_compare.csv", index=False)
 print("\n", cv_df.to_string(index=False))
 
-# 선택: 단순한 순서 = MF only / Content only (0개) < H1 (1개) < H3 (3개) < H2 (버킷 수)
+# selection: simplicity order = MF only / Content only (0 params) < H1 (1) < H3 (3) < H2 (number of buckets)
 order = ["MF only", "Content only", "H1_global", "H3_stack", "H2_bucket"]
 scores = cv_df.set_index("structure").cv_rmse
 best_val = min(scores[o] for o in order)

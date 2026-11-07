@@ -1,14 +1,14 @@
-"""Stage 1: 개인 선호 예측 모델 고르기 (Train 으로 공부, Validation 으로 채점).
+"""Stage 1: choose the individual preference model (learn on Train, score on Validation).
 
-순서
- 1. MF 하이퍼파라미터: 넓게(coarse) 훑고 -> 제일 좋은 곳 주변을 좁게(fine) 다시 비교
- 2. Content 하이퍼파라미터 격자 탐색
- 3. Hybrid 섞는 비율 alpha 를 0~1 사이 0.05 간격으로 비교
- 4. MF / Content / Hybrid 중 Validation RMSE 가 가장 낮은 것을 최종 Stage 1 모델로 선택
+Steps
+ 1. MF hyperparameters: coarse sweep -> finer comparison around the best region
+ 2. Grid search over Content hyperparameters
+ 3. Compare the Hybrid mixing ratio alpha from 0 to 1 in steps of 0.05
+ 4. Among MF / Content / Hybrid, choose the one with the lowest Validation RMSE as the final Stage 1 model
 
-공정한 비교를 위해 세 모델 모두 '같은 Validation 평점 묶음'으로 채점한다:
- = Validation 기간 평점 중, Train 에 기록이 있는 사용자 & Train 에 등장한 영화
-   (그룹 추천 대상 사용자는 모두 과거 기록이 있으므로 이 조건이 실제 사용 상황과 같다)
+For a fair comparison, all three models are scored on the 'same set of Validation ratings':
+ = Validation-period ratings whose user has history in Train & whose movie appears in Train
+   (every user targeted by group recommendation has past history, so this matches the real use case)
 """
 import itertools
 import sys
@@ -92,7 +92,7 @@ h_df.to_csv(RESULTS / "stage1_hybrid_alpha.csv", index=False)
 h_best = h_df.loc[h_df.val_rmse.idxmin()].to_dict()
 print(h_df.to_string(index=False))
 
-# ------------------------------------------------------------------ 4) 비교 & 선택
+# ------------------------------------------------------------------ 4) compare & select
 baseline_user_mean = np.array([content_model.user_mean[u] for u in vU])
 compare = pd.DataFrame([
     dict(model="Baseline: 사용자 평균", val_rmse=rmse(vY, baseline_user_mean), val_mae=mae(vY, baseline_user_mean)),
@@ -105,7 +105,7 @@ print("\n", compare.to_string(index=False))
 
 cands = {"MF": mf_best["val_rmse"], "Content": c_best["val_rmse"], "Hybrid": h_best["val_rmse"]}
 chosen = min(cands, key=cands.get)
-# Hybrid 가 alpha=1 또는 0 에서 최적이면 사실상 MF 또는 Content 와 같다 -> 그 이름으로 기록
+# If Hybrid is best at alpha=1 or 0 it is effectively MF or Content -> record it under that name
 if chosen == "Hybrid" and h_best["alpha"] in (0.0, 1.0):
     chosen = "MF" if h_best["alpha"] == 1.0 else "Content"
 alpha = {"MF": 1.0, "Content": 0.0}.get(chosen, h_best["alpha"])

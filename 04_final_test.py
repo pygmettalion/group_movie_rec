@@ -1,10 +1,10 @@
-"""Stage 4: 고정된 모델로 최종 시험 (한 번만 채점, 이 결과로 아무것도 다시 고르지 않는다).
+"""Stage 4: final test with the frozen model (scored only once; nothing is re-selected from these results).
 
- 1) Internal Test   : MovieLens Test 기간, 공식 그룹 49개
- 2) External Test   : MovieTweetings 44개 그룹 (전혀 다른 서비스의 사용자들)
- 3) Beliefs 검증    : 아직 안 본 영화에 대한 '관람 전 예상 별점'을 개인 선호 모델이 얼마나 맞히는지
+ 1) Internal Test   : MovieLens Test period, 49 official groups
+ 2) External Test   : 44 MovieTweetings groups (users of a completely different service)
+ 3) Beliefs check   : how well the individual preference model predicts 'pre-viewing expected ratings' for movies not yet seen
 
-모든 설정은 results/FINAL_FROZEN_CONFIG.json 에서 읽는다.
+All settings are read from results/FINAL_FROZEN_CONFIG.json.
 """
 import pickle
 import sys
@@ -31,7 +31,7 @@ trva = r[r.split.isin(["train", "validation"])]
 te = r[r.split == "test"]
 gt_ml = movie_genre_table(r)
 
-# 고정된 하이퍼파라미터로 Train+Validation 재학습 (공부 범위만 시험 직전까지 확장)
+# retrain on Train+Validation with the frozen hyperparameters (only the study range is extended up to the test)
 s1 = Stage1Predictor(S1, gt_ml, seed=SEED).fit(trva)
 mstats = movie_stats(trva)
 METHODS = ["Random", "Average", "LeastMisery", "RiskAware", "Oracle"]
@@ -57,7 +57,7 @@ def run_groups(cases, tag):
 
 
 # ================================================================== 1) Internal Test
-# (참고) 개인 선호 예측 정확도 - 보고용. 선택에는 쓰지 않음.
+# (reference) individual preference prediction accuracy - for reporting only, not used for any choice
 te_w = te[te.user_id.isin(trva.user_id) & te.movie_id.isin(trva.movie_id)]
 ind = [dict(model=f"최종 Stage 1 ({S1['structure']})", test_rmse=rmse(te_w.rating_norm, s1.predict(te_w.user_id.values, te_w.movie_id.values)))]
 if s1.use_mf:
@@ -82,7 +82,7 @@ int_sum, int_boot = run_groups(cases, "internal")
 # ================================================================== 2) External Test (MovieTweetings)
 mt, mt_groups = load_movietweetings()
 hist, mt_test = mt[mt.split == "history"], mt[mt.split == "test"]
-gt_mt = movie_genre_table(mt)                      # MovieTweetings(IMDb) 장르 - 사용자 프로필과 같은 어휘
+gt_mt = movie_genre_table(mt)                      # MovieTweetings (IMDb) genres - same vocabulary as the user profiles
 gt_mt_int = {int(k) if k.isdigit() else k: v for k, v in gt_mt.items()}
 
 
@@ -110,15 +110,15 @@ print(f"\n[External] MF fold-in 가능 비율: {np.mean(coverage):.3f} (1.0 이�
 assert not np.isnan(np.concatenate([c["pred"].ravel() for c in cases_mt])).any(), "예측 불가 후보 존재"
 ext_sum, ext_boot = run_groups(cases_mt, "external")
 
-# ================================================================== 3) Beliefs (미시청 영화 개인 선호)
+# ================================================================== 3) Beliefs (individual preference for unseen movies)
 b_test, b_hist = load_beliefs()
-gt_b = movie_genre_table(b_hist, b_test)           # 영화 메타데이터(장르)만 사용, 평점은 아님
+gt_b = movie_genre_table(b_hist, b_test)           # only movie metadata (genres) is used, not ratings
 b_hist = b_hist.sort_values(["user_id", "timestamp"])
 hist_groups = {u: (d.timestamp.to_numpy(), d.movie_id.to_numpy(), d.rating_norm.to_numpy()) for u, d in b_hist.groupby("user_id")}
 out = []
 for (u, ts), d in b_test.groupby(["user_id", "timestamp"]):
     hts, hm, hy = hist_groups.get(u, (np.array([]), np.array([]), np.array([])))
-    cut = np.searchsorted(hts, ts, side="left")          # 응답 시각보다 '앞선' 평점만
+    cut = np.searchsorted(hts, ts, side="left")          # only ratings 'before' the response time
     hm_, hy_ = hm[:cut], hy[:cut]
     movies = d.movie_id.to_numpy()
     pred, known = s1.predict_new_user(hm_, hy_, movies, genre_table=gt_b, allow_content_fallback=True)
@@ -127,7 +127,7 @@ for (u, ts), d in b_test.groupby(["user_id", "timestamp"]):
                              "mf_covered": known, "user_mean": base, "n_hist": cut}))
 bel = pd.concat(out, ignore_index=True)
 bel.to_csv(RESULTS / "beliefs_predictions.csv", index=False)
-STAR = 4.5   # Beliefs 0.5~5점 -> 0~1 로 바꿀 때 나눈 값
+STAR = 4.5   # divisor used to map Beliefs 0.5~5 stars to 0~1
 rows = []
 for name, mask in [("전체", np.ones(len(bel), bool)), ("MF가 아는 영화 (Hybrid 그대로)", bel.mf_covered.to_numpy()),
                    ("MF가 모르는 영화 (Content 대체)", ~bel.mf_covered.to_numpy())]:
