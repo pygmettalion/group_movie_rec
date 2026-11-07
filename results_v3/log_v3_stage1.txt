@@ -1,0 +1,25 @@
+[MF] 앙상블
+  seed 0: 0.22409 / 평균 1개: 0.22409
+  seed 1: 0.22464 / 평균 2개: 0.22395
+  seed 2: 0.22434 / 평균 3개: 0.22381
+  seed 3: 0.22448 / 평균 4개: 0.22377
+  seed 4: 0.22430 / 평균 5개: 0.22372
+[Item-kNN]
+   {'k': 20, 'sim_shrink': 25.0, 'val_rmse': 0.22873546424736313}
+   {'k': 20, 'sim_shrink': 100.0, 'val_rmse': 0.22896047215191043}
+   {'k': 40, 'sim_shrink': 25.0, 'val_rmse': 0.22832361952154245}
+   {'k': 40, 'sim_shrink': 100.0, 'val_rmse': 0.2284579691750958}
+   {'k': 80, 'sim_shrink': 25.0, 'val_rmse': 0.22864787464856737}
+   {'k': 80, 'sim_shrink': 100.0, 'val_rmse': 0.2286410483122136}
+   {'k': 160, 'sim_shrink': 25.0, 'val_rmse': 0.22884475942828228}
+   {'k': 160, 'sim_shrink': 100.0, 'val_rmse': 0.22874942531955209}
+kNN 선택: {'k': 40, 'sim_shrink': 25.0} 0.22832361952154245
+  H2 + MF 1번                       CV RMSE 0.22155
+  H2 + MF 5번 평균                    CV RMSE 0.22134
+  LIN3 + MF 5번 평균                  CV RMSE 0.22277
+  LIN3_B + MF 5번 평균                CV RMSE 0.22027
+  GBM(lr=0.05,leaves=15) + MF 5번 평균 CV RMSE 0.22484
+  GBM(lr=0.05,leaves=31) + MF 5번 평균 CV RMSE 0.22633
+  GBM(lr=0.1,leaves=15) + MF 5번 평균 CV RMSE 0.22612
+
+3차 Stage 1 선택: LIN3_B + MF 5번 평균 CV RMSE 0.22027 (2차 0.22155)

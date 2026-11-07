@@ -1,0 +1,10 @@
+{
+  "n_groups": 500,
+  "n_possible": 6926,
+  "n_users": 207,
+  "avg_candidates": 5.46,
+  "note": "봉인됨: 각 버전 최종 모델을 한 번씩만 채점. 이 파일을 만들 때 별점은 읽지 않음.",
+  "excluded_from": [
+    "results_v2/FRESH_HOLDOUT_groups.csv"
+  ]
+}

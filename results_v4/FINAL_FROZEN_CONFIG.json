@@ -1,0 +1,17 @@
+{
+  "version": "v4",
+  "combo": "S1+RV1",
+  "rule": "LINMIN",
+  "a": 3.0,
+  "b": 0.5,
+  "percentile": 5,
+  "tolerance": 0.005,
+  "stage1_from": "results_v1_frozen",
+  "selection": {
+    "avg": 0.7808125,
+    "min": 0.58,
+    "sd": 0.049,
+    "base_avg": 0.7853125
+  },
+  "rule_text": "극혐률 최소 (평균 만족도 손실 0.005 이내), 동점이면 최저만족↑ -> 평균만족↑ -> 단순"
+}

@@ -1,0 +1,44 @@
+{'v1': ('H2_bucket', 5, 0.75), 'v2': ('H2_bucket', 5, 5.0)}
+
+[새 시험지 500그룹 | 극혐 잣대 = 하위 5%]
+  dislike_percentile version      method  avg_satisfaction  min_satisfaction  strong_dislike_rate  balanced_score
+                  5      v1      Random            0.6748            0.4468               0.1675          0.6514
+                  5      v1     Average            0.7899            0.5760               0.0640          0.7673
+                  5      v1 LeastMisery            0.7886            0.5865               0.0440          0.7770
+                  5      v1   RiskAware            0.7917            0.5905               0.0420          0.7801
+                  5      v1      Oracle            0.8556            0.6815               0.0180          0.8397
+                  5      v2      Random            0.6748            0.4468               0.1675          0.6514
+                  5      v2     Average            0.7907            0.5820               0.0540          0.7729
+                  5      v2 LeastMisery            0.7899            0.5870               0.0440          0.7776
+                  5      v2   RiskAware            0.7870            0.5910               0.0400          0.7793
+                  5      v2      Oracle            0.8556            0.6815               0.0180          0.8397
+  v2 RiskAware - v1 RiskAware: avg -0.0047 [-0.0109,+0.0015], min +0.0005 [-0.0095,+0.0110], sd -0.0020 [-0.0160,+0.0120]
+  v2 RiskAware - v2 Average: avg -0.0037 [-0.0104,+0.0029], min +0.0090 [-0.0025,+0.0205], sd -0.0140 [-0.0320,+0.0020]
+  v1 RiskAware - v1 Average: avg +0.0019 [-0.0026,+0.0063], min +0.0145 [+0.0055,+0.0240], sd -0.0220 [-0.0360,-0.0080]
+  v2 Average - v1 Average: avg +0.0009 [-0.0018,+0.0037], min +0.0060 [+0.0000,+0.0130], sd -0.0100 [-0.0220,+0.0000]
+
+[Test 기간 개인 예측 RMSE, 별점] {'v1': 0.8861, 'v2': 0.8842}
+
+[참고] 기존 Internal 49그룹 (2차)
+ version      method  avg_satisfaction  min_satisfaction  strong_dislike_rate  balanced_score
+     v2      Random            0.5898            0.3387               0.1961          0.5775
+     v2     Average            0.7207            0.4286               0.1837          0.6552
+     v2 LeastMisery            0.7156            0.4337               0.1633          0.6620
+     v2   RiskAware            0.7181            0.4184               0.1837          0.6509
+     v2      Oracle            0.7730            0.5255               0.0204          0.7594
+
+[참고] 기존 External 44그룹 (2차)
+ version      method  avg_satisfaction  min_satisfaction  strong_dislike_rate  balanced_score
+     v2      Random            0.7861            0.6472               0.0987          0.7782
+     v2     Average            0.8398            0.7250               0.0455          0.8398
+     v2 LeastMisery            0.8358            0.7136               0.0455          0.8347
+     v2   RiskAware            0.8358            0.7114               0.0227          0.8415
+     v2      Oracle            0.8812            0.7818               0.0227          0.8801
+
+[참고] Beliefs (2차)
+        subset     n  model_rmse_stars  user_mean_rmse_stars
+           전체 25360            1.3744                1.4601
+    MF가 아는 영화  6492            1.2440                1.2804
+새 영화(Content) 18868            1.4165                1.5170
+
+저장 -> results_v2/V2_FINAL_RESULTS.json

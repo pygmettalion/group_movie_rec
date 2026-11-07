@@ -1,0 +1,36 @@
+Train 700,144 / Validation 채점 35,124
+
+[Content v2] 피처 조합 x 하이퍼파라미터
+  G     kappa=None: best val RMSE 0.25984  ({'feature_set': 'G', 'kappa': None, 'k_mean': 20, 'lam_user': 100, 'lam_global': 0.1, 'val_rmse': 0.25984409725116037, 'val_mae': 0.2068125972234204})
+  GY    kappa=None: best val RMSE 0.25495  ({'feature_set': 'GY', 'kappa': None, 'k_mean': 20, 'lam_user': 100, 'lam_global': 1.0, 'val_rmse': 0.2549501612130333, 'val_mae': 0.20291314734900376})
+  GYC   kappa=None: best val RMSE 0.23800  ({'feature_set': 'GYC', 'kappa': None, 'k_mean': 50, 'lam_user': 30, 'lam_global': 0.1, 'val_rmse': 0.23800388783149304, 'val_mae': 0.18792025953148014})
+  GYCD  kappa=10.0: best val RMSE 0.23743  ({'feature_set': 'GYCD', 'kappa': 10.0, 'k_mean': 50, 'lam_user': 30, 'lam_global': 0.1, 'val_rmse': 0.23742729809453733, 'val_mae': 0.18749573768035943})
+  GYCD  kappa=50.0: best val RMSE 0.23743  ({'feature_set': 'GYCD', 'kappa': 50.0, 'k_mean': 50, 'lam_user': 30, 'lam_global': 0.1, 'val_rmse': 0.2374267277489732, 'val_mae': 0.18751094534865226})
+  GYCD  kappa=200.0: best val RMSE 0.23744  ({'feature_set': 'GYCD', 'kappa': 200.0, 'k_mean': 50, 'lam_user': 30, 'lam_global': 0.1, 'val_rmse': 0.23744049768136982, 'val_mae': 0.1875370717553152})
+  격자 확장 후 최고: {'feature_set': 'GYCD', 'kappa': 50.0, 'k_mean': 100, 'lam_user': 30.0, 'lam_global': 0.1, 'val_rmse': 0.23741221225783007, 'val_mae': 0.1877051093952805}
+Content 선택: {'feature_set': 'GYCD', 'kappa': 50.0, 'k_mean': 100.0, 'lam_user': 30.0, 'lam_global': 0.1} val RMSE 0.23741221225783007
+
+[ALS v2] 반감기 x 규제 (k=64: 1차에서 고른 값)
+   {'half_life': None, 'k': 64, 'reg': 0.015, 'best_iter': 7, 'val_rmse': 0.22574529373732324, 'val_mae': 0.17682169642248247}
+   {'half_life': None, 'k': 64, 'reg': 0.02, 'best_iter': 8, 'val_rmse': 0.22409432926899756, 'val_mae': 0.1756033059623519}
+   {'half_life': None, 'k': 64, 'reg': 0.03, 'best_iter': 14, 'val_rmse': 0.225820774713998, 'val_mae': 0.1772132016179669}
+   {'half_life': 30, 'k': 64, 'reg': 0.015, 'best_iter': 8, 'val_rmse': 0.23077108127979937, 'val_mae': 0.1803325895618238}
+   {'half_life': 30, 'k': 64, 'reg': 0.02, 'best_iter': 9, 'val_rmse': 0.22815137754042875, 'val_mae': 0.17845916699914957}
+   {'half_life': 30, 'k': 64, 'reg': 0.03, 'best_iter': 12, 'val_rmse': 0.2275346181028584, 'val_mae': 0.17832020703044252}
+   {'half_life': 60, 'k': 64, 'reg': 0.015, 'best_iter': 7, 'val_rmse': 0.22798971731292167, 'val_mae': 0.1782853381391423}
+   {'half_life': 60, 'k': 64, 'reg': 0.02, 'best_iter': 8, 'val_rmse': 0.22583332116980565, 'val_mae': 0.17671015715949376}
+   {'half_life': 60, 'k': 64, 'reg': 0.03, 'best_iter': 13, 'val_rmse': 0.22630957296706886, 'val_mae': 0.17747304537159933}
+   {'half_life': 120, 'k': 64, 'reg': 0.015, 'best_iter': 7, 'val_rmse': 0.22654092044985893, 'val_mae': 0.17728056784489005}
+   {'half_life': 120, 'k': 64, 'reg': 0.02, 'best_iter': 8, 'val_rmse': 0.2246278136290707, 'val_mae': 0.17586873777337877}
+   {'half_life': 120, 'k': 64, 'reg': 0.03, 'best_iter': 14, 'val_rmse': 0.22584820570870875, 'val_mae': 0.17717942894725863}
+MF 선택: {'type': 'als', 'k': 64, 'reg': 0.02, 'epochs': 8, 'lr': 0.0, 'half_life': None} val RMSE 0.22409432926899756
+
+    structure  cv_rmse   cv_mae
+   H1_global 0.222505 0.175105
+   H2_bucket 0.221553 0.174729
+    H3_stack 0.223191 0.175705
+     MF only 0.224094 0.175603
+Content only 0.237412 0.187705
+
+2차 Stage 1 선택: {'version': 'v2', 'chosen_model': 'Hybrid', 'structure': 'H2_bucket', 'mf': {'type': 'als', 'k': 64, 'reg': 0.02, 'epochs': 8, 'lr': 0.0, 'half_life': None}, 'content': {'feature_set': 'GYCD', 'kappa': 50.0, 'k_mean': 100.0, 'lam_user': 30.0, 'lam_global': 0.1}, 'alpha': None, 'hybrid_params': {'0': 0.45, '1': 0.95, '2': 0.9}, 'bucket_edges': [0, 50, 200], 'validation_scores': {'H1_global': 0.22250539549218143, 'H2_bucket': 0.2215529315606526, 'H3_stack': 0.22319119109609742, 'MF only': 0.22409432926899756, 'Content only': 0.23741221225783007}, 'v1_reference_val_rmse': 0.22259339380149828, 'rule': '교차검증 RMSE 최소, 0.0003 이내면 더 단순한 구조'}
+1차 Stage 1 Validation RMSE 0.22259 -> 2차 0.22155

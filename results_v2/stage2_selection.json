@@ -1,0 +1,26 @@
+{
+  "version": "v2",
+  "percentile": 5,
+  "structure": "indiv_v2",
+  "feature_set": "I_gd",
+  "features": [
+    "pred",
+    "thr",
+    "margin",
+    "share",
+    "m_logcount",
+    "m_mean",
+    "m_std",
+    "m_lowfrac",
+    "u_gdis"
+  ],
+  "alpha": 3.0,
+  "kappa": 50.0,
+  "classifier": "HGB(lr=0.1,leaves=7)",
+  "cv_logloss": 0.42254405365099335,
+  "cv_auc": 0.8310787705262809,
+  "base_rate": 0.26296503106023594,
+  "indiv_dislike_rate": 0.08353981992042996,
+  "n_pseudo_groups": 28654,
+  "rule": "percentile 내: CV log loss 최소 / percentile 간: AUC 최대(0.005 이내면 작은 p)"
+}

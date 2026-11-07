@@ -1,0 +1,226 @@
+{
+  "internal": [
+    {
+      "method": "Random",
+      "avg_satisfaction": 0.5898141399416911,
+      "min_satisfaction": 0.33865706997084544,
+      "strong_dislike_rate": 0.19606413994169097,
+      "balanced_score": 0.5774690233236152
+    },
+    {
+      "method": "Average",
+      "avg_satisfaction": 0.7193877551020408,
+      "min_satisfaction": 0.42857142857142855,
+      "strong_dislike_rate": 0.1836734693877551,
+      "balanced_score": 0.6547619047619048
+    },
+    {
+      "method": "LeastMisery",
+      "avg_satisfaction": 0.7155612244897959,
+      "min_satisfaction": 0.4336734693877551,
+      "strong_dislike_rate": 0.16326530612244897,
+      "balanced_score": 0.6619897959183673
+    },
+    {
+      "method": "RiskAware(lambda=0.75)",
+      "avg_satisfaction": 0.7181122448979592,
+      "min_satisfaction": 0.42857142857142855,
+      "strong_dislike_rate": 0.16326530612244897,
+      "balanced_score": 0.6611394557823129
+    },
+    {
+      "method": "Oracle",
+      "avg_satisfaction": 0.7729591836734694,
+      "min_satisfaction": 0.5255102040816326,
+      "strong_dislike_rate": 0.02040816326530612,
+      "balanced_score": 0.7593537414965986
+    }
+  ],
+  "internal_bootstrap": {
+    "RiskAware - Random": {
+      "avg": {
+        "diff": 0.12829810495626823,
+        "lo": 0.09875242954324588,
+        "hi": 0.15659666545189502
+      },
+      "min": {
+        "diff": 0.08991435860058308,
+        "lo": 0.03422732932458697,
+        "hi": 0.14133435070456743
+      },
+      "sd": {
+        "diff": -0.03279883381924197,
+        "lo": -0.1233284742468416,
+        "hi": 0.06958454810495625
+      }
+    },
+    "RiskAware - Average": {
+      "avg": {
+        "diff": -0.0012755102040816326,
+        "lo": -0.016581632653061226,
+        "hi": 0.01403061224489796
+      },
+      "min": {
+        "diff": 0.0,
+        "lo": -0.02040816326530612,
+        "hi": 0.025510204081632654
+      },
+      "sd": {
+        "diff": -0.02040816326530612,
+        "lo": -0.061224489795918366,
+        "hi": 0.0
+      }
+    },
+    "RiskAware - LeastMisery": {
+      "avg": {
+        "diff": 0.002551020408163265,
+        "lo": -0.01403061224489796,
+        "hi": 0.01913265306122449
+      },
+      "min": {
+        "diff": -0.00510204081632653,
+        "lo": -0.030612244897959183,
+        "hi": 0.02040816326530612
+      },
+      "sd": {
+        "diff": 0.0,
+        "lo": -0.061224489795918366,
+        "hi": 0.061224489795918366
+      }
+    }
+  },
+  "external": [
+    {
+      "method": "Random",
+      "avg_satisfaction": 0.7861093073593075,
+      "min_satisfaction": 0.6471536796536796,
+      "strong_dislike_rate": 0.09870129870129872,
+      "balanced_score": 0.7781872294372295
+    },
+    {
+      "method": "Average",
+      "avg_satisfaction": 0.834090909090909,
+      "min_satisfaction": 0.7113636363636363,
+      "strong_dislike_rate": 0.022727272727272728,
+      "balanced_score": 0.8409090909090908
+    },
+    {
+      "method": "LeastMisery",
+      "avg_satisfaction": 0.8386363636363634,
+      "min_satisfaction": 0.7136363636363637,
+      "strong_dislike_rate": 0.06818181818181818,
+      "balanced_score": 0.8280303030303031
+    },
+    {
+      "method": "RiskAware(lambda=0.75)",
+      "avg_satisfaction": 0.8369318181818183,
+      "min_satisfaction": 0.7227272727272728,
+      "strong_dislike_rate": 0.022727272727272728,
+      "balanced_score": 0.8456439393939394
+    },
+    {
+      "method": "Oracle",
+      "avg_satisfaction": 0.8812500000000001,
+      "min_satisfaction": 0.7818181818181816,
+      "strong_dislike_rate": 0.022727272727272728,
+      "balanced_score": 0.8801136363636365
+    }
+  ],
+  "external_bootstrap": {
+    "RiskAware - Random": {
+      "avg": {
+        "diff": 0.05082251082251084,
+        "lo": 0.030827583874458882,
+        "hi": 0.07299932359307357
+      },
+      "min": {
+        "diff": 0.07557359307359308,
+        "lo": 0.042466179653679645,
+        "hi": 0.1069918831168831
+      },
+      "sd": {
+        "diff": -0.07597402597402599,
+        "lo": -0.12597943722943725,
+        "hi": -0.028463203463203465
+      }
+    },
+    "RiskAware - Average": {
+      "avg": {
+        "diff": 0.0028409090909090884,
+        "lo": -0.006818181818181812,
+        "hi": 0.013068181818181819
+      },
+      "min": {
+        "diff": 0.011363636363636366,
+        "lo": -0.006818181818181817,
+        "hi": 0.03181818181818182
+      },
+      "sd": {
+        "diff": 0.0,
+        "lo": 0.0,
+        "hi": 0.0
+      }
+    },
+    "RiskAware - LeastMisery": {
+      "avg": {
+        "diff": -0.0017045454545454612,
+        "lo": -0.016477272727272726,
+        "hi": 0.01363636363636363
+      },
+      "min": {
+        "diff": 0.009090909090909092,
+        "lo": -0.01590909090909091,
+        "hi": 0.03636363636363637
+      },
+      "sd": {
+        "diff": -0.045454545454545456,
+        "lo": -0.11363636363636363,
+        "hi": 0.0
+      }
+    }
+  },
+  "external_mf_coverage": 1.0,
+  "internal_individual": [
+    {
+      "model": "최종 Stage 1 (H2_bucket)",
+      "test_rmse": 0.22153061599409882,
+      "test_rmse_stars": 0.8861224639763953
+    },
+    {
+      "model": "MF component",
+      "test_rmse": 0.22200385909655507,
+      "test_rmse_stars": 0.8880154363862203
+    },
+    {
+      "model": "Content component",
+      "test_rmse": 0.26092732047498896,
+      "test_rmse_stars": 1.0437092818999558
+    }
+  ],
+  "beliefs": [
+    {
+      "subset": "전체",
+      "n": 25360,
+      "model_rmse_stars": 1.4044341686647768,
+      "model_mae_stars": 1.1082551534415344,
+      "user_mean_rmse_stars": 1.460118842097019,
+      "corr": 0.3514374301268572
+    },
+    {
+      "subset": "MF가 아는 영화 (Hybrid 그대로)",
+      "n": 6492,
+      "model_rmse_stars": 1.240378956143251,
+      "model_mae_stars": 0.9469325117466734,
+      "user_mean_rmse_stars": 1.2804130159522515,
+      "corr": 0.47935376061129176
+    },
+    {
+      "subset": "MF가 모르는 영화 (Content 대체)",
+      "n": 18868,
+      "model_rmse_stars": 1.456615159697751,
+      "model_mae_stars": 1.1637621806772263,
+      "user_mean_rmse_stars": 1.517036646478557,
+      "corr": 0.27514171226214623
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+신뢰도 필터: Validation 기준 학습 평점 21개 이상인 영화만 후보 (구간별 RMSE: 0-5: 0.325, 5-10: 0.268, 10-20: 0.262, 20-50: 0.235, 50-100: 0.233, 100-200: 0.218, 200-500: 0.216, 500-+: 0.213)
+그룹 1 사용자 [1203, 1228, 1889, 2634]: 이미 본 영화 1196편 제외 -> 후보 1721편
+
+lambda = 0.75  (Final = 예상만족 - lambda x 극혐위험)
+   movie_id            genres  expected_satisfaction  misery_risk  final_score  pred_user1203_stars  pred_user1228_stars  pred_user1889_stars  pred_user2634_stars
+0      2905  Action|Adventure                  0.941        0.021        0.925                5.000                4.820                4.477                4.763
+1       904  Mystery|Thriller                  0.883        0.009        0.876                4.749                4.429                4.248                4.706
+2       922         Film-Noir                  0.879        0.016        0.867                4.743                4.455                4.226                4.644
+3      1262     Adventure|War                  0.870        0.010        0.862                4.695                4.476                4.247                4.495
+4      1250         Drama|War                  0.866        0.010        0.858                4.680                4.384                4.182                4.605
+
+최종 추천: movie 2905 (Action|Adventure)  예상만족 0.941, 극혐위험 0.021
+참고 - 평균만 봤다면: movie 2905 (Action|Adventure)  예상만족 0.941, 극혐위험 0.021

@@ -1,0 +1,40 @@
+{
+  "version": "v2",
+  "chosen_model": "Hybrid",
+  "structure": "H2_bucket",
+  "mf": {
+    "type": "als",
+    "k": 64,
+    "reg": 0.02,
+    "epochs": 8,
+    "lr": 0.0,
+    "half_life": null
+  },
+  "content": {
+    "feature_set": "GYCD",
+    "kappa": 50.0,
+    "k_mean": 100.0,
+    "lam_user": 30.0,
+    "lam_global": 0.1
+  },
+  "alpha": null,
+  "hybrid_params": {
+    "0": 0.45,
+    "1": 0.95,
+    "2": 0.9
+  },
+  "bucket_edges": [
+    0,
+    50,
+    200
+  ],
+  "validation_scores": {
+    "H1_global": 0.22250539549218143,
+    "H2_bucket": 0.2215529315606526,
+    "H3_stack": 0.22319119109609742,
+    "MF only": 0.22409432926899756,
+    "Content only": 0.23741221225783007
+  },
+  "v1_reference_val_rmse": 0.22259339380149828,
+  "rule": "교차검증 RMSE 최소, 0.0003 이내면 더 단순한 구조"
+}

@@ -1,0 +1,22 @@
+{
+  "chosen_model": "Hybrid",
+  "alpha": 0.85,
+  "mf": {
+    "k": 32,
+    "lr": 0.05,
+    "reg": 0.01,
+    "epochs": 11
+  },
+  "content": {
+    "k_mean": 20.0,
+    "lam_user": 100.0,
+    "lam_global": 0.1
+  },
+  "validation_rmse": {
+    "MF": 0.22824512906756725,
+    "Content": 0.25984409725116037,
+    "Hybrid": 0.22695998184200372
+  },
+  "validation_eval_rows": 35124,
+  "rule": "Validation RMSE 최소 모델 선택 (같은 평점 묶음으로 채점)"
+}

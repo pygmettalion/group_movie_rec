@@ -1,0 +1,23 @@
+{
+  "percentile": 5,
+  "structure": "indiv",
+  "classifier": "HGB(lr=0.03,leaves=31)",
+  "feature_set": "I_member",
+  "features": [
+    "pred",
+    "thr",
+    "margin",
+    "share",
+    "m_logcount",
+    "m_mean",
+    "m_std",
+    "m_lowfrac"
+  ],
+  "cv_logloss": 0.42342571078849195,
+  "cv_auc": 0.8299028951905959,
+  "cv_pr_auc": 0.6773633155104989,
+  "base_rate": 0.26296503106023594,
+  "indiv_dislike_rate": 0.08353981992042996,
+  "n_pseudo_groups": 28654,
+  "rule": "percentile 내: CV log loss 최소 / percentile 간: AUC 최대(0.005 이내면 작은 p)"
+}

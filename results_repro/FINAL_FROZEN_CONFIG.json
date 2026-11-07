@@ -1,0 +1,66 @@
+{
+  "frozen_note": "이 파일이 저장된 뒤에는 어떤 값도 바꾸지 않는다. Test/External Test 는 이 설정으로 한 번만 채점.",
+  "stage1": {
+    "chosen_model": "Hybrid",
+    "structure": "H2_bucket",
+    "mf": {
+      "type": "als",
+      "k": 64,
+      "reg": 0.02,
+      "epochs": 8,
+      "lr": 0.0
+    },
+    "content": {
+      "k_mean": 20.0,
+      "lam_user": 100.0,
+      "lam_global": 0.1
+    },
+    "alpha": null,
+    "hybrid_params": {
+      "0": 0.65,
+      "1": 1.0,
+      "2": 1.0
+    },
+    "bucket_edges": [
+      0,
+      50,
+      200
+    ],
+    "validation_scores": {
+      "H1_global": 0.223776933264228,
+      "H2_bucket": 0.22259339380149828,
+      "H3_stack": 0.2245685047765941,
+      "MF only": 0.22409432926899756,
+      "Content only": 0.25984409725116037,
+      "k=0 편향만(참고)": 0.23257183203415313
+    },
+    "rule": "교차검증 RMSE 최소, 0.0003 이내면 더 단순한 구조"
+  },
+  "stage2": {
+    "percentile": 5,
+    "structure": "indiv",
+    "classifier": "HGB(lr=0.03,leaves=31)",
+    "feature_set": "I_member",
+    "features": [
+      "pred",
+      "thr",
+      "margin",
+      "share",
+      "m_logcount",
+      "m_mean",
+      "m_std",
+      "m_lowfrac"
+    ],
+    "cv_logloss": 0.42342571078849195,
+    "cv_auc": 0.8299028951905959,
+    "cv_pr_auc": 0.6773633155104989,
+    "base_rate": 0.26296503106023594,
+    "indiv_dislike_rate": 0.08353981992042996,
+    "n_pseudo_groups": 28654,
+    "rule": "percentile 내: CV log loss 최소 / percentile 간: AUC 최대(0.005 이내면 작은 p)"
+  },
+  "lam": 0.75,
+  "lambda_rule": "공식49+추가 연습 그룹 전체에서 balanced_score=(평균만족+최저만족+(1-극혐률))/3 최대, 동점이면 작은 lambda",
+  "n_lambda_groups": 649,
+  "test_refit_note": "Test 채점 전, 고정된 하이퍼파라미터 그대로 Stage 1 을 Train+Validation 으로 다시 학습 (설정은 그대로, 시험 직전까지의 기록으로 공부 범위만 늘림). Risk 분류기와 lambda 는 그대로."
+}

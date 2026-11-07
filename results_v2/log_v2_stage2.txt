@@ -1,0 +1,110 @@
+Stage 1 (2차) 을 Train 으로 학습 -> H2_bucket GYCD half_life None
+가짜 그룹 28,654개, 개인 학습 행 23,030개
+  p= 5 I_member   a=None LogReg(C=1)              logloss 0.4418 AUC 0.8114
+  p= 5 I_member   a=None HGB(lr=0.03,leaves=31)   logloss 0.4236 AUC 0.8297
+  p= 5 I_member   a=None HGB(lr=0.1,leaves=7)     logloss 0.4245 AUC 0.8292
+  p= 5 I_meta     a=None LogReg(C=1)              logloss 0.4413 AUC 0.8123
+  p= 5 I_meta     a=None HGB(lr=0.03,leaves=31)   logloss 0.4237 AUC 0.8301
+  p= 5 I_meta     a=None HGB(lr=0.1,leaves=7)     logloss 0.4264 AUC 0.8269
+  p= 5 I_gd       a=3.0 LogReg(C=1)              logloss 0.4416 AUC 0.8118
+  p= 5 I_gd       a=3.0 HGB(lr=0.03,leaves=31)   logloss 0.4233 AUC 0.8308
+  p= 5 I_gd       a=3.0 HGB(lr=0.1,leaves=7)     logloss 0.4225 AUC 0.8311
+  p= 5 I_meta_gd  a=3.0 LogReg(C=1)              logloss 0.4409 AUC 0.8130
+  p= 5 I_meta_gd  a=3.0 HGB(lr=0.03,leaves=31)   logloss 0.4239 AUC 0.8301
+  p= 5 I_meta_gd  a=3.0 HGB(lr=0.1,leaves=7)     logloss 0.4236 AUC 0.8309
+  p= 5 I_gd       a=10.0 LogReg(C=1)              logloss 0.4416 AUC 0.8118
+  p= 5 I_gd       a=10.0 HGB(lr=0.03,leaves=31)   logloss 0.4238 AUC 0.8306
+  p= 5 I_gd       a=10.0 HGB(lr=0.1,leaves=7)     logloss 0.4244 AUC 0.8301
+  p= 5 I_meta_gd  a=10.0 LogReg(C=1)              logloss 0.4409 AUC 0.8130
+  p= 5 I_meta_gd  a=10.0 HGB(lr=0.03,leaves=31)   logloss 0.4250 AUC 0.8295
+  p= 5 I_meta_gd  a=10.0 HGB(lr=0.1,leaves=7)     logloss 0.4253 AUC 0.8292
+  p=10 I_member   a=None LogReg(C=1)              logloss 0.4779 AUC 0.8041
+  p=10 I_member   a=None HGB(lr=0.03,leaves=31)   logloss 0.4615 AUC 0.8197
+  p=10 I_member   a=None HGB(lr=0.1,leaves=7)     logloss 0.4609 AUC 0.8207
+  p=10 I_meta     a=None LogReg(C=1)              logloss 0.4771 AUC 0.8053
+  p=10 I_meta     a=None HGB(lr=0.03,leaves=31)   logloss 0.4631 AUC 0.8187
+  p=10 I_meta     a=None HGB(lr=0.1,leaves=7)     logloss 0.4615 AUC 0.8198
+  p=10 I_gd       a=3.0 LogReg(C=1)              logloss 0.4777 AUC 0.8047
+  p=10 I_gd       a=3.0 HGB(lr=0.03,leaves=31)   logloss 0.4595 AUC 0.8219
+  p=10 I_gd       a=3.0 HGB(lr=0.1,leaves=7)     logloss 0.4587 AUC 0.8231
+  p=10 I_meta_gd  a=3.0 LogReg(C=1)              logloss 0.4764 AUC 0.8063
+  p=10 I_meta_gd  a=3.0 HGB(lr=0.03,leaves=31)   logloss 0.4614 AUC 0.8199
+  p=10 I_meta_gd  a=3.0 HGB(lr=0.1,leaves=7)     logloss 0.4612 AUC 0.8202
+  p=10 I_gd       a=10.0 LogReg(C=1)              logloss 0.4777 AUC 0.8045
+  p=10 I_gd       a=10.0 HGB(lr=0.03,leaves=31)   logloss 0.4622 AUC 0.8196
+  p=10 I_gd       a=10.0 HGB(lr=0.1,leaves=7)     logloss 0.4604 AUC 0.8215
+  p=10 I_meta_gd  a=10.0 LogReg(C=1)              logloss 0.4765 AUC 0.8062
+  p=10 I_meta_gd  a=10.0 HGB(lr=0.03,leaves=31)   logloss 0.4632 AUC 0.8186
+  p=10 I_meta_gd  a=10.0 HGB(lr=0.1,leaves=7)     logloss 0.4623 AUC 0.8191
+  p=15 I_member   a=None LogReg(C=1)              logloss 0.4955 AUC 0.8097
+  p=15 I_member   a=None HGB(lr=0.03,leaves=31)   logloss 0.4786 AUC 0.8246
+  p=15 I_member   a=None HGB(lr=0.1,leaves=7)     logloss 0.4818 AUC 0.8218
+  p=15 I_meta     a=None LogReg(C=1)              logloss 0.4945 AUC 0.8106
+  p=15 I_meta     a=None HGB(lr=0.03,leaves=31)   logloss 0.4792 AUC 0.8248
+  p=15 I_meta     a=None HGB(lr=0.1,leaves=7)     logloss 0.4821 AUC 0.8225
+  p=15 I_gd       a=3.0 LogReg(C=1)              logloss 0.4958 AUC 0.8095
+  p=15 I_gd       a=3.0 HGB(lr=0.03,leaves=31)   logloss 0.4783 AUC 0.8252
+  p=15 I_gd       a=3.0 HGB(lr=0.1,leaves=7)     logloss 0.4784 AUC 0.8250
+  p=15 I_meta_gd  a=3.0 LogReg(C=1)              logloss 0.4944 AUC 0.8108
+  p=15 I_meta_gd  a=3.0 HGB(lr=0.03,leaves=31)   logloss 0.4789 AUC 0.8250
+  p=15 I_meta_gd  a=3.0 HGB(lr=0.1,leaves=7)     logloss 0.4795 AUC 0.8247
+  p=15 I_gd       a=10.0 LogReg(C=1)              logloss 0.4958 AUC 0.8094
+  p=15 I_gd       a=10.0 HGB(lr=0.03,leaves=31)   logloss 0.4784 AUC 0.8250
+  p=15 I_gd       a=10.0 HGB(lr=0.1,leaves=7)     logloss 0.4789 AUC 0.8244
+  p=15 I_meta_gd  a=10.0 LogReg(C=1)              logloss 0.4945 AUC 0.8106
+  p=15 I_meta_gd  a=10.0 HGB(lr=0.03,leaves=31)   logloss 0.4786 AUC 0.8253
+  p=15 I_meta_gd  a=10.0 HGB(lr=0.1,leaves=7)     logloss 0.4773 AUC 0.8266
+  p=20 I_member   a=None LogReg(C=1)              logloss 0.5105 AUC 0.8191
+  p=20 I_member   a=None HGB(lr=0.03,leaves=31)   logloss 0.4945 AUC 0.8314
+  p=20 I_member   a=None HGB(lr=0.1,leaves=7)     logloss 0.4943 AUC 0.8314
+  p=20 I_meta     a=None LogReg(C=1)              logloss 0.5093 AUC 0.8198
+  p=20 I_meta     a=None HGB(lr=0.03,leaves=31)   logloss 0.4934 AUC 0.8320
+  p=20 I_meta     a=None HGB(lr=0.1,leaves=7)     logloss 0.4944 AUC 0.8313
+  p=20 I_gd       a=3.0 LogReg(C=1)              logloss 0.5100 AUC 0.8191
+  p=20 I_gd       a=3.0 HGB(lr=0.03,leaves=31)   logloss 0.4938 AUC 0.8316
+  p=20 I_gd       a=3.0 HGB(lr=0.1,leaves=7)     logloss 0.4940 AUC 0.8311
+  p=20 I_meta_gd  a=3.0 LogReg(C=1)              logloss 0.5083 AUC 0.8204
+  p=20 I_meta_gd  a=3.0 HGB(lr=0.03,leaves=31)   logloss 0.4938 AUC 0.8318
+  p=20 I_meta_gd  a=3.0 HGB(lr=0.1,leaves=7)     logloss 0.4931 AUC 0.8320
+  p=20 I_gd       a=10.0 LogReg(C=1)              logloss 0.5100 AUC 0.8191
+  p=20 I_gd       a=10.0 HGB(lr=0.03,leaves=31)   logloss 0.4927 AUC 0.8327
+  p=20 I_gd       a=10.0 HGB(lr=0.1,leaves=7)     logloss 0.4940 AUC 0.8315
+  p=20 I_meta_gd  a=10.0 LogReg(C=1)              logloss 0.5082 AUC 0.8203
+  p=20 I_meta_gd  a=10.0 HGB(lr=0.03,leaves=31)   logloss 0.4930 AUC 0.8323
+  p=20 I_meta_gd  a=10.0 HGB(lr=0.1,leaves=7)     logloss 0.4938 AUC 0.8317
+  p=25 I_member   a=None LogReg(C=1)              logloss 0.5256 AUC 0.8137
+  p=25 I_member   a=None HGB(lr=0.03,leaves=31)   logloss 0.5115 AUC 0.8245
+  p=25 I_member   a=None HGB(lr=0.1,leaves=7)     logloss 0.5120 AUC 0.8242
+  p=25 I_meta     a=None LogReg(C=1)              logloss 0.5241 AUC 0.8147
+  p=25 I_meta     a=None HGB(lr=0.03,leaves=31)   logloss 0.5123 AUC 0.8239
+  p=25 I_meta     a=None HGB(lr=0.1,leaves=7)     logloss 0.5129 AUC 0.8236
+  p=25 I_gd       a=3.0 LogReg(C=1)              logloss 0.5256 AUC 0.8137
+  p=25 I_gd       a=3.0 HGB(lr=0.03,leaves=31)   logloss 0.5091 AUC 0.8268
+  p=25 I_gd       a=3.0 HGB(lr=0.1,leaves=7)     logloss 0.5106 AUC 0.8258
+  p=25 I_meta_gd  a=3.0 LogReg(C=1)              logloss 0.5235 AUC 0.8152
+  p=25 I_meta_gd  a=3.0 HGB(lr=0.03,leaves=31)   logloss 0.5098 AUC 0.8260
+  p=25 I_meta_gd  a=3.0 HGB(lr=0.1,leaves=7)     logloss 0.5113 AUC 0.8254
+  p=25 I_gd       a=10.0 LogReg(C=1)              logloss 0.5255 AUC 0.8137
+  p=25 I_gd       a=10.0 HGB(lr=0.03,leaves=31)   logloss 0.5114 AUC 0.8248
+  p=25 I_gd       a=10.0 HGB(lr=0.1,leaves=7)     logloss 0.5114 AUC 0.8251
+  p=25 I_meta_gd  a=10.0 LogReg(C=1)              logloss 0.5233 AUC 0.8153
+  p=25 I_meta_gd  a=10.0 HGB(lr=0.03,leaves=31)   logloss 0.5103 AUC 0.8256
+  p=25 I_meta_gd  a=10.0 HGB(lr=0.1,leaves=7)     logloss 0.5108 AUC 0.8256
+
+  percentile  features  alpha             classifier  logloss      auc  base_rate
+          5      I_gd    3.0   HGB(lr=0.1,leaves=7) 0.422544 0.831079   0.262965
+         10      I_gd    3.0   HGB(lr=0.1,leaves=7) 0.458653 0.823099   0.306868
+         15 I_meta_gd   10.0   HGB(lr=0.1,leaves=7) 0.477273 0.826600   0.350248
+         20      I_gd   10.0 HGB(lr=0.03,leaves=31) 0.492685 0.832665   0.426991
+         25      I_gd    3.0 HGB(lr=0.03,leaves=31) 0.509100 0.826750   0.504502
+
+선택: percentile 5, 피처 I_gd, alpha 3.0, HGB(lr=0.1,leaves=7)
+/home/claude/group_movie_rec/12_v2_stage2.py:93: RuntimeWarning: Mean of empty slice
+  return Xi, yi, Xg, yg, float((pg_df[YC].to_numpy() <= thr4).mean()), ctx, th
+/usr/local/lib/python3.13/site-packages/numpy/_core/_methods.py:142: RuntimeWarning: invalid value encountered in scalar divide
+  ret = ret.dtype.type(ret / rcount)
+/home/claude/group_movie_rec/12_v2_stage2.py:93: RuntimeWarning: Mean of empty slice
+  return Xi, yi, Xg, yg, float((pg_df[YC].to_numpy() <= thr4).mean()), ctx, th
+/usr/local/lib/python3.13/site-packages/numpy/_core/_methods.py:142: RuntimeWarning: invalid value encountered in scalar divide
+  ret = ret.dtype.type(ret / rcount)
+추가 연습 그룹 600개

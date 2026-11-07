@@ -1,0 +1,80 @@
+{
+  "version": "v3",
+  "frozen_note": "3차 고정. 2번 새 시험지(FRESH_HOLDOUT2)로 1·2·3차를 한 번씩만 채점.",
+  "stage1": {
+    "version": "v3",
+    "blender": "LIN3_B",
+    "candidate": "LIN3_B + MF 5번 평균",
+    "mf": {
+      "type": "als",
+      "k": 64,
+      "reg": 0.02,
+      "epochs": 8,
+      "n_bag": 5
+    },
+    "content": {
+      "feature_set": "GYCD",
+      "kappa": 50.0,
+      "k_mean": 100.0,
+      "lam_user": 30.0,
+      "lam_global": 0.1
+    },
+    "knn": {
+      "k": 40,
+      "sim_shrink": 25.0
+    },
+    "blender_params": {
+      "0": [
+        0.08827096759833226,
+        0.46811618889676093,
+        0.37498967290855406,
+        0.07733969382776933
+      ],
+      "1": [
+        -0.03687297213668979,
+        0.48756860006190217,
+        0.06581944267440948,
+        0.4760812492130906
+      ],
+      "2": [
+        -0.06659048399403551,
+        0.5274759977972605,
+        0.10126631789700233,
+        0.43502690583676357
+      ]
+    },
+    "validation_cv_rmse": 0.22026886854144662,
+    "v2_reference": 0.2215529315606526,
+    "rule": "교차검증 RMSE 최소, 0.0003 이내면 더 단순한 것"
+  },
+  "stage2": {
+    "version": "v3",
+    "percentile": 5,
+    "structure": "indiv_v2",
+    "feature_set": "I_gd",
+    "features": [
+      "pred",
+      "thr",
+      "margin",
+      "share",
+      "m_logcount",
+      "m_mean",
+      "m_std",
+      "m_lowfrac",
+      "u_gdis"
+    ],
+    "alpha": 3.0,
+    "kappa": 50.0,
+    "classifier": "HGB(lr=0.1,leaves=7)",
+    "cv_logloss": 0.42074405681453675,
+    "cv_auc": 0.8326594050279057,
+    "base_rate": 0.26296503106023594,
+    "indiv_dislike_rate": 0.08353981992042996,
+    "n_pseudo_groups": 28654,
+    "rule": "percentile 내: CV log loss 최소 / percentile 간: AUC 최대(0.005 이내면 작은 p)"
+  },
+  "beta": 0.1,
+  "lam": 1.5,
+  "selection_score": 0.7761027863379557,
+  "rule": "Validation649 와 1번시험지500 의 balanced 평균 최대, 동점이면 beta+lambda 작은 쪽"
+}

@@ -1,0 +1,274 @@
+{
+  "fresh_p5": {
+    "table": [
+      {
+        "dislike_percentile": 5,
+        "version": "v1",
+        "method": "Random",
+        "avg_satisfaction": 0.6747726951076684,
+        "min_satisfaction": 0.4468332292380047,
+        "strong_dislike_rate": 0.16751100194585727,
+        "balanced_score": 0.651364974133272
+      },
+      {
+        "dislike_percentile": 5,
+        "version": "v1",
+        "method": "Average",
+        "avg_satisfaction": 0.789875,
+        "min_satisfaction": 0.576,
+        "strong_dislike_rate": 0.064,
+        "balanced_score": 0.7672916666666666
+      },
+      {
+        "dislike_percentile": 5,
+        "version": "v1",
+        "method": "LeastMisery",
+        "avg_satisfaction": 0.788625,
+        "min_satisfaction": 0.5865,
+        "strong_dislike_rate": 0.044,
+        "balanced_score": 0.7770416666666667
+      },
+      {
+        "dislike_percentile": 5,
+        "version": "v1",
+        "method": "RiskAware",
+        "avg_satisfaction": 0.79175,
+        "min_satisfaction": 0.5905,
+        "strong_dislike_rate": 0.042,
+        "balanced_score": 0.7800833333333334
+      },
+      {
+        "dislike_percentile": 5,
+        "version": "v1",
+        "method": "Oracle",
+        "avg_satisfaction": 0.855625,
+        "min_satisfaction": 0.6815,
+        "strong_dislike_rate": 0.018,
+        "balanced_score": 0.8397083333333333
+      },
+      {
+        "dislike_percentile": 5,
+        "version": "v2",
+        "method": "Random",
+        "avg_satisfaction": 0.6747726951076684,
+        "min_satisfaction": 0.4468332292380047,
+        "strong_dislike_rate": 0.16751100194585727,
+        "balanced_score": 0.651364974133272
+      },
+      {
+        "dislike_percentile": 5,
+        "version": "v2",
+        "method": "Average",
+        "avg_satisfaction": 0.79075,
+        "min_satisfaction": 0.582,
+        "strong_dislike_rate": 0.054,
+        "balanced_score": 0.7729166666666666
+      },
+      {
+        "dislike_percentile": 5,
+        "version": "v2",
+        "method": "LeastMisery",
+        "avg_satisfaction": 0.789875,
+        "min_satisfaction": 0.587,
+        "strong_dislike_rate": 0.044,
+        "balanced_score": 0.777625
+      },
+      {
+        "dislike_percentile": 5,
+        "version": "v2",
+        "method": "RiskAware",
+        "avg_satisfaction": 0.787,
+        "min_satisfaction": 0.591,
+        "strong_dislike_rate": 0.04,
+        "balanced_score": 0.7793333333333333
+      },
+      {
+        "dislike_percentile": 5,
+        "version": "v2",
+        "method": "Oracle",
+        "avg_satisfaction": 0.855625,
+        "min_satisfaction": 0.6815,
+        "strong_dislike_rate": 0.018,
+        "balanced_score": 0.8397083333333333
+      }
+    ],
+    "bootstrap": {
+      "v2 RiskAware - v1 RiskAware": {
+        "avg": {
+          "diff": -0.00475,
+          "lo": -0.010875,
+          "hi": 0.0015
+        },
+        "min": {
+          "diff": 0.0005,
+          "lo": -0.0095,
+          "hi": 0.011
+        },
+        "sd": {
+          "diff": -0.002,
+          "lo": -0.016,
+          "hi": 0.012
+        }
+      },
+      "v2 RiskAware - v2 Average": {
+        "avg": {
+          "diff": -0.00375,
+          "lo": -0.010375,
+          "hi": 0.002875
+        },
+        "min": {
+          "diff": 0.009,
+          "lo": -0.0025,
+          "hi": 0.0205
+        },
+        "sd": {
+          "diff": -0.014,
+          "lo": -0.032,
+          "hi": 0.002
+        }
+      },
+      "v1 RiskAware - v1 Average": {
+        "avg": {
+          "diff": 0.001875,
+          "lo": -0.002625,
+          "hi": 0.006253124999999955
+        },
+        "min": {
+          "diff": 0.0145,
+          "lo": 0.0055,
+          "hi": 0.024
+        },
+        "sd": {
+          "diff": -0.022,
+          "lo": -0.036,
+          "hi": -0.008
+        }
+      },
+      "v2 Average - v1 Average": {
+        "avg": {
+          "diff": 0.000875,
+          "lo": -0.00175,
+          "hi": 0.00375
+        },
+        "min": {
+          "diff": 0.006,
+          "lo": 0.0,
+          "hi": 0.013
+        },
+        "sd": {
+          "diff": -0.01,
+          "lo": -0.022,
+          "hi": 0.0
+        }
+      }
+    }
+  },
+  "test_individual_rmse_stars": {
+    "v1": 0.8861224639763953,
+    "v2": 0.8841753731493752
+  },
+  "internal_v2_reference": [
+    {
+      "version": "v2",
+      "method": "Random",
+      "avg_satisfaction": 0.5898141399416911,
+      "min_satisfaction": 0.33865706997084544,
+      "strong_dislike_rate": 0.19606413994169097,
+      "balanced_score": 0.5774690233236152
+    },
+    {
+      "version": "v2",
+      "method": "Average",
+      "avg_satisfaction": 0.7206632653061225,
+      "min_satisfaction": 0.42857142857142855,
+      "strong_dislike_rate": 0.1836734693877551,
+      "balanced_score": 0.655187074829932
+    },
+    {
+      "version": "v2",
+      "method": "LeastMisery",
+      "avg_satisfaction": 0.7155612244897959,
+      "min_satisfaction": 0.4336734693877551,
+      "strong_dislike_rate": 0.16326530612244897,
+      "balanced_score": 0.6619897959183673
+    },
+    {
+      "version": "v2",
+      "method": "RiskAware",
+      "avg_satisfaction": 0.7181122448979592,
+      "min_satisfaction": 0.41836734693877553,
+      "strong_dislike_rate": 0.1836734693877551,
+      "balanced_score": 0.6509353741496599
+    },
+    {
+      "version": "v2",
+      "method": "Oracle",
+      "avg_satisfaction": 0.7729591836734694,
+      "min_satisfaction": 0.5255102040816326,
+      "strong_dislike_rate": 0.02040816326530612,
+      "balanced_score": 0.7593537414965986
+    }
+  ],
+  "external_v2_reference": [
+    {
+      "version": "v2",
+      "method": "Random",
+      "avg_satisfaction": 0.7861093073593075,
+      "min_satisfaction": 0.6471536796536796,
+      "strong_dislike_rate": 0.09870129870129872,
+      "balanced_score": 0.7781872294372295
+    },
+    {
+      "version": "v2",
+      "method": "Average",
+      "avg_satisfaction": 0.8397727272727273,
+      "min_satisfaction": 0.7250000000000001,
+      "strong_dislike_rate": 0.045454545454545456,
+      "balanced_score": 0.8397727272727273
+    },
+    {
+      "version": "v2",
+      "method": "LeastMisery",
+      "avg_satisfaction": 0.8357954545454546,
+      "min_satisfaction": 0.7136363636363637,
+      "strong_dislike_rate": 0.045454545454545456,
+      "balanced_score": 0.8346590909090909
+    },
+    {
+      "version": "v2",
+      "method": "RiskAware",
+      "avg_satisfaction": 0.8357954545454547,
+      "min_satisfaction": 0.7113636363636364,
+      "strong_dislike_rate": 0.022727272727272728,
+      "balanced_score": 0.8414772727272727
+    },
+    {
+      "version": "v2",
+      "method": "Oracle",
+      "avg_satisfaction": 0.8812500000000001,
+      "min_satisfaction": 0.7818181818181816,
+      "strong_dislike_rate": 0.022727272727272728,
+      "balanced_score": 0.8801136363636365
+    }
+  ],
+  "beliefs_v2_reference": [
+    {
+      "subset": "전체",
+      "n": 25360,
+      "model_rmse_stars": 1.3743857186312562,
+      "user_mean_rmse_stars": 1.460118842097019
+    },
+    {
+      "subset": "MF가 아는 영화",
+      "n": 6492,
+      "model_rmse_stars": 1.2439736609035008,
+      "user_mean_rmse_stars": 1.2804130159522515
+    },
+    {
+      "subset": "새 영화(Content)",
+      "n": 18868,
+      "model_rmse_stars": 1.4164835909019107,
+      "user_mean_rmse_stars": 1.517036646478557
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+고정 설정: Stage1=H2_bucket, percentile=5, risk=indiv/HGB(lr=0.03,leaves=31), lambda=0.75
+
+[Internal] 개인 예측 RMSE (Test 평점 101574 건)
+                  model  test_rmse  test_rmse_stars
+최종 Stage 1 (H2_bucket)     0.2215           0.8861
+          MF component     0.2220           0.8880
+     Content component     0.2609           1.0437
+
+[internal] 그룹 49개
+                 method  avg_satisfaction  min_satisfaction  strong_dislike_rate  balanced_score
+                Random            0.5898            0.3387               0.1961          0.5775
+               Average            0.7194            0.4286               0.1837          0.6548
+           LeastMisery            0.7156            0.4337               0.1633          0.6620
+RiskAware(lambda=0.75)            0.7181            0.4286               0.1633          0.6611
+                Oracle            0.7730            0.5255               0.0204          0.7594
+  RiskAware - Random: avg +0.1283 [+0.0988,+0.1566], min +0.0899 [+0.0342,+0.1413], sd -0.0328 [-0.1233,+0.0696]
+  RiskAware - Average: avg -0.0013 [-0.0166,+0.0140], min +0.0000 [-0.0204,+0.0255], sd -0.0204 [-0.0612,+0.0000]
+  RiskAware - LeastMisery: avg +0.0026 [-0.0140,+0.0191], min -0.0051 [-0.0306,+0.0204], sd +0.0000 [-0.0612,+0.0612]
+
+[External] MF fold-in 가능 비율: 1.000 (1.0 이면 모든 사용자·후보에 대해 Hybrid 점수 생성)
+
+[external] 그룹 44개
+                 method  avg_satisfaction  min_satisfaction  strong_dislike_rate  balanced_score
+                Random            0.7861            0.6472               0.0987          0.7782
+               Average            0.8341            0.7114               0.0227          0.8409
+           LeastMisery            0.8386            0.7136               0.0682          0.8280
+RiskAware(lambda=0.75)            0.8369            0.7227               0.0227          0.8456
+                Oracle            0.8812            0.7818               0.0227          0.8801
+  RiskAware - Random: avg +0.0508 [+0.0308,+0.0730], min +0.0756 [+0.0425,+0.1070], sd -0.0760 [-0.1260,-0.0285]
+  RiskAware - Average: avg +0.0028 [-0.0068,+0.0131], min +0.0114 [-0.0068,+0.0318], sd +0.0000 [+0.0000,+0.0000]
+  RiskAware - LeastMisery: avg -0.0017 [-0.0165,+0.0136], min +0.0091 [-0.0159,+0.0364], sd -0.0455 [-0.1136,+0.0000]
+
+[Beliefs] 관람 전 예상 별점 맞히기 (별점 단위 RMSE)
+                  subset     n  model_rmse_stars  model_mae_stars  user_mean_rmse_stars   corr
+                     전체 25360            1.4044           1.1083                1.4601 0.3514
+ MF가 아는 영화 (Hybrid 그대로)  6492            1.2404           0.9469                1.2804 0.4794
+MF가 모르는 영화 (Content 대체) 18868            1.4566           1.1638                1.5170 0.2751
+
+저장 완료 -> results/FINAL_TEST_RESULTS.json
