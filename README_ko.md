@@ -35,7 +35,7 @@
 ## 핵심 결과 (v1)
 | 시험 | 결과 |
 |---|---|
-| 새 시험지 1·2번 합계 1,000그룹 (후보 5편 이상) | Strong Dislike: Average 6.7% → **5.4%** (95% 구간 −2.2 ~ −0.4%p). 평균 만족도 차이 −0.002(구간이 0 포함) |
+| 새 시험지 1·2번 합계 1,000그룹 (후보 5편 이상) | Strong Dislike: Average 6.7% → **5.4%** (95% 구간 −2.3 ~ −0.4%p, `results_v3/why_ours.json`). 평균 만족도 차이 −0.002(구간이 0 포함) |
 | 기존 방식 10가지와 비교 (`07_why_ours.py`) | Least Misery 와 위험 수준은 유사(5.3% vs 5.4%). Least Misery 는 Average 대비 평균 만족도가 유의하게 낮았고(−0.004), Risk-Aware 는 유의한 손실이 없었다 |
 | 후보 수별 분석 (`09_by_candidates.py`) | 후보 10편 이상 그룹에서 Average 대비 Strong Dislike **약 36% 감소**(6.8% → 4.4%, 206그룹). 후보 3편에서는 1% |
 | 공식 Internal Test 49그룹 | Strong Dislike 18.4% → 16.3% |
@@ -50,7 +50,7 @@ Least Misery 와 비교하면 위험 수준은 유사했으며, 만족도와 위
 ## 실행 방법
 ```bash
 pip install -r requirements.txt
-./run_v1_all.sh                                    # 01 → 01b → 02 → 03 → 04 (최종 모델 전체, 2코어 약 40분)
+bash run_v1_all.sh                                    # 01 → 01b → 02 → 03 → 04 (최종 모델 전체, 2코어 약 40분)
 RESULTS_DIR=results_v1_frozen python 05_demo.py 1  # 그룹 1에게 실제 추천 (제목은 data_extra/ml-1m/movies.dat 있으면 표시)
 python 07_why_ours.py && python 08_make_plots.py && python 09_by_candidates.py   # 비교·그래프
 ```
@@ -96,7 +96,7 @@ python preprocessing/prepare_team_data.py --movielens ml-1m.zip --movietweetings
 설명: `preprocessing/00_먼저읽기.txt`. 원본 데이터는 라이선스 때문에 포함하지 않는다(아래 링크에서 다운로드).
 
 ## 재현성 확인
-`./run_v1_all.sh` 로 빈 폴더(`results_repro/`)에서 처음부터 다시 돌린 결과가 `results_v1_frozen/` 과 소수점까지 같다
+`bash run_v1_all.sh` 로 빈 폴더(`results_repro/`)에서 처음부터 다시 돌린 결과가 `results_v1_frozen/` 과 소수점까지 같다
 (Stage 1 설정, 위험 모델, λ=0.75, Internal·MovieTweetings·Beliefs 결과 전부).
 
 ### 참고: 결과 폴더에 남아 있는 '극혐' 표현
@@ -116,4 +116,4 @@ MovieLens 는 재배포가 금지되어 원본을 올리지 않는다. `data/` �
 - MovieTweetings: https://github.com/sidooms/MovieTweetings
 - IMDb `title.crew.tsv.gz`: https://datasets.imdbws.com/ · Rotten Tomatoes 영화 CSV (Kaggle)
 
-라이브러리·함수 설명과 참고 문헌: **`LIBRARIES_AND_REFERENCES.md`**
+라이브러리·함수 설명과 참고 문헌: **`LIBRARIES_AND_REFERENCES_ko.md`** (영어판: `LIBRARIES_AND_REFERENCES.md`)

@@ -35,7 +35,7 @@ The goal of this model is to **keep the average satisfaction almost unchanged wh
 ## Key results (v1)
 | Test | Result |
 |---|---|
-| Fresh holdouts 1+2, 1,000 groups (≥5 candidates) | Strong Dislike: Average 6.7% → **5.4%** (95% CI −2.2 to −0.4 pp). Average-satisfaction difference −0.002 (CI includes 0) |
+| Fresh holdouts 1+2, 1,000 groups (≥5 candidates) | Strong Dislike: Average 6.7% → **5.4%** (95% CI −2.3 to −0.4 pp, `results_v3/why_ours.json`). Average-satisfaction difference −0.002 (CI includes 0) |
 | Comparison with 10 existing methods (`07_why_ours.py`) | Risk level similar to Least Misery (5.3% vs 5.4%). Least Misery had significantly lower average satisfaction than Average (−0.004); Risk-Aware had no significant loss |
 | Analysis by number of candidates (`09_by_candidates.py`) | In groups with 10+ candidates, Strong Dislike **reduced by about 36%** vs Average (6.8% → 4.4%, 206 groups). 1% with 3 candidates |
 | Official Internal Test, 49 groups | Strong Dislike 18.4% → 16.3% |
@@ -50,7 +50,7 @@ Figures: `figures/` (fig1 comparison with existing methods, fig8 effect by numbe
 ## How to run
 ```bash
 pip install -r requirements.txt
-./run_v1_all.sh                                    # 01 → 01b → 02 → 03 → 04 (whole final model, ~40 min on 2 cores)
+bash run_v1_all.sh                                    # 01 → 01b → 02 → 03 → 04 (whole final model, ~40 min on 2 cores)
 RESULTS_DIR=results_v1_frozen python 05_demo.py 1  # real recommendation for group 1 (titles shown if data_extra/ml-1m/movies.dat exists)
 python 07_why_ours.py && python 08_make_plots.py && python 09_by_candidates.py   # comparisons and figures
 ```
@@ -96,7 +96,7 @@ python preprocessing/prepare_team_data.py --movielens ml-1m.zip --movietweetings
 Description: `preprocessing/00_먼저읽기.txt` ("read me first"). The original data is not included because of its license (download links below).
 
 ## Reproducibility check
-Running `./run_v1_all.sh` from an empty folder (`results_repro/`) reproduces `results_v1_frozen/` exactly, down to the decimals
+Running `bash run_v1_all.sh` from an empty folder (`results_repro/`) reproduces `results_v1_frozen/` exactly, down to the decimals
 (Stage 1 settings, risk model, λ=0.75, and all Internal, MovieTweetings, and Beliefs results).
 
 ### Note: the Korean word '극혐' left in the result folders
