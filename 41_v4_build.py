@@ -1,10 +1,10 @@
-"""[4차] 팀 목표("아무도 극혐하지 않는 선택")를 직접 노리도록 '고르는 방식'을 다시 만든다.
+"""[4차] 팀 목표("아무도 강하게 싫어하지 않는 선택")를 직접 노리도록 '고르는 방식'을 다시 만든다.
 
 1~3차와 다른 점
  (1) 고르는 기준을 팀 목표에 맞춤 (결과 보기 전에 고정):
-       극혐 발생률을 최소화한다. 단, 평균 만족도가 '평균 최대' 방식보다 0.005 넘게 떨어지면 탈락.
+       Strong Dislike 발생률을 최소화한다. 단, 평균 만족도가 '평균 최대' 방식보다 0.005 넘게 떨어지면 탈락.
        동점이면 최저 만족도가 높은 것 -> 평균 만족도가 높은 것 -> 더 단순한 것.
- (2) 거부권(veto) 규칙 후보 추가: 극혐 위험이 tau 를 넘는 영화는 빼고, 남은 영화 중 평균 1등.
+ (2) 거부권(veto) 규칙 후보 추가: Strong Dislike 위험이 tau 를 넘는 영화는 빼고, 남은 영화 중 평균 1등.
      (모두 빠지면 위험이 가장 낮은 영화)
  (3) 시험 기간에 맞춘 위험 모델 후보 추가: 1·2번 시험지 사용자들의 '시험 기간 실제 평점'으로 학습.
      1번 시험지 그룹의 위험은 2번 시험지 사람들로만 학습한 모델로, 2번은 1번 사람들로만 학습한 모델로 계산 (교차 적합).
@@ -57,7 +57,7 @@ for k, s in S.items():
 rows["thr"] = rows.user_id.map(th.thr)
 rows["share"] = rows.user_id.map(th.share)
 rows["dis"] = (rows.rating_norm <= rows.thr).astype(int)
-print("시험 기간 개인 극혐 비율:", round(rows.dis.mean(), 4))
+print("시험 기간 개인 Strong Dislike 비율:", round(rows.dis.mean(), 4))
 
 # ---------------------------------------------------------------- 위험 모델 후보
 with open(ROOT / "results_v1_frozen" / "risk_model.pkl", "rb") as f:
@@ -177,7 +177,7 @@ for pick_h, eval_h in [(1, 2), (2, 1)]:
                        v4_avg=v4.avg.mean(), v4_min=v4["min"].mean(), v4_sd=v4.sd.mean(),
                        v1_avg=v1.avg.mean(), v1_min=v1["min"].mean(), v1_sd=v1.sd.mean(),
                        avg_avg=avg.avg.mean(), avg_sd=avg.sd.mean()))
-    print(f"[교차 추정] {pick_h}번으로 고름 -> {eval_h}번 채점: {nested[-1]['chosen']} | 극혐 4차 {v4.sd.mean():.3f} / "
+    print(f"[교차 추정] {pick_h}번으로 고름 -> {eval_h}번 채점: {nested[-1]['chosen']} | Strong Dislike 4차 {v4.sd.mean():.3f} / "
           f"1차 {v1.sd.mean():.3f} / 평균최대 {avg.sd.mean():.3f} | 평균만족 4차 {v4.avg.mean():.4f} / 1차 {v1.avg.mean():.4f}")
 pd.DataFrame(nested).to_csv(OUT / "v4_nested_estimate.csv", index=False)
 
@@ -193,7 +193,7 @@ sname = combo.split("+")[0]
 final = dict(version="v4", combo=combo, rule=best.rule, a=float(best.a), b=float(best.b), percentile=P,
              tolerance=TOL, stage1_from="results_v1_frozen" if sname == "S1" else "results_v3",
              selection=dict(avg=best.avg, min=best["min"], sd=best.sd, base_avg=best.base_avg),
-             rule_text="극혐률 최소 (평균 만족도 손실 0.005 이내), 동점이면 최저만족↑ -> 평균만족↑ -> 단순")
+             rule_text="Strong Dislike 비율 최소 (평균 만족도 손실 0.005 이내), 동점이면 최저만족↑ -> 평균만족↑ -> 단순")
 if combo.endswith("RT"):
     X = indiv_features_v2(rows[f"pred_{sname}"].values, rows.thr.values, rows.share.values, rows.movie_id.values,
                           rows.user_id.values, mstats, ctx)

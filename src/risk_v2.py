@@ -1,8 +1,8 @@
-"""[2차 버전] 극혐 위험 모델 피처 추가.
+"""[2차 버전] Strong Dislike 위험 모델 피처 추가.
 
-1차 피처(개인 예측 점수, 극혐선, 거리, 극혐 빈도, 영화 과거 평점 통계)에 더해
-  - meta : 평론가 점수(+없음 표시), 개봉 연도, 감독 효과      -> "평론가가 혹평한 영화는 누군가 극혐하기 쉽다?"
-  - gd   : 그 사람의 '이 영화 장르에서의 과거 극혐 비율'       -> "공포 영화만 나오면 1점 주는 사람"
+1차 피처(개인 예측 점수, 불호 기준선, 거리, Strong Dislike 빈도, 영화 과거 평점 통계)에 더해
+  - meta : 평론가 점수(+없음 표시), 개봉 연도, 감독 효과      -> "평론가가 혹평한 영화는 누군가 강하게 싫어하기 쉽다?"
+  - gd   : 그 사람의 '이 영화 장르에서의 과거 Strong Dislike 비율'       -> "공포 영화만 나오면 1점 주는 사람"
 모두 예측 시점 이전 기록(hist)만으로 계산한다.
 """
 import numpy as np
@@ -22,8 +22,8 @@ INDIV_V2_SETS = {
 
 class RiskContext:
     def __init__(self, gd_hist, thr, genre_lookup, alpha, item_hist, kappa):
-        """gd_hist: 그 사용자들의 예측 시점 이전 평점(genres 열 포함) -> 장르별 극혐 비율
-        item_hist: 영화 정보(감독 효과)를 계산할 MovieLens 과거 평점, thr: user->극혐선,
+        """gd_hist: 그 사용자들의 예측 시점 이전 평점(genres 열 포함) -> 장르별 Strong Dislike 비율
+        item_hist: 영화 정보(감독 효과)를 계산할 MovieLens 과거 평점, thr: user->불호 기준선,
         genre_lookup: movie->장르 문자열(MovieLens 표기)."""
         self.items = risk_item_table(item_hist, kappa)
         self.gdis = user_genre_dislike(gd_hist, thr, alpha)

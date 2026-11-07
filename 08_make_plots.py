@@ -122,7 +122,7 @@ fig.tight_layout(rect=(0, 0.04, 1, 1))
 fig.savefig(FIG / "fig4_risk_model.png", dpi=180)
 plt.close(fig)
 
-# ---------------------------------------------------------------- 5. 극혐 기준 동점 문제
+# ---------------------------------------------------------------- 5. Strong Dislike 기준 동점 문제
 import sys  # noqa: E402
 sys.path.insert(0, str(ROOT / "src"))
 from common import load_movielens  # noqa: E402
@@ -131,7 +131,7 @@ _r, _ = load_movielens()
 _tr = _r[_r.split == "train"]
 pct = [5, 10, 15, 20, 25]
 inclusive, fixed = [], []
-for p in pct:   # Train 기간 사용자별로 '극혐으로 잡힌 비율'의 평균
+for p in pct:   # Train 기간 사용자별로 'Strong Dislike로 잡힌 비율'의 평균
     q = _tr.groupby("user_id").rating_norm.quantile(p / 100)          # 보통 백분위 공식
     inclusive.append(float((_tr.rating_norm <= _tr.user_id.map(q)).groupby(_tr.user_id).mean().mean() * 100))
     fixed.append(float(user_thresholds(_tr, p).share.mean() * 100))   # 동점을 고려한 공식 (실제 사용)

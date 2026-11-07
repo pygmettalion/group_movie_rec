@@ -1,7 +1,7 @@
 """[4차] 외부 데이터 시험: MovieTweetings 44그룹 (다른 서비스 사용자). 4차는 이미 고정됨 -> 한 번만 채점.
 
 1차 외부 시험(04_final_test.py)과 같은 방식: MovieLens(Train+Validation)로 학습한 모델에
-MovieTweetings 사용자의 과거 평점을 넣어(fold-in) 예측, 극혐선은 각자의 MovieTweetings 과거 평점으로 계산.
+MovieTweetings 사용자의 과거 평점을 넣어(fold-in) 예측, 불호 기준선은 각자의 MovieTweetings 과거 평점으로 계산.
 실행: python 43_v4_external.py
 """
 import json

@@ -116,7 +116,7 @@ def risk_item_table(hist, kappa=50.0):
 
 
 def user_genre_dislike(hist, thr, alpha):
-    """사용자별 '장르별 극혐 비율' (18칸). 기록이 적은 장르는 그 사람 전체 극혐 비율 쪽으로 당김(alpha)."""
+    """사용자별 '장르별 Strong Dislike 비율' (18칸). 기록이 적은 장르는 그 사람 전체 Strong Dislike 비율 쪽으로 당김(alpha)."""
     h = hist[["user_id", "movie_id", "rating_norm", "genres"]].copy()
     h["dis"] = (h.rating_norm <= h.user_id.map(thr)).astype(float)
     G = np.vstack([(genre_vector(g) > 0).astype(float) for g in h.genres])

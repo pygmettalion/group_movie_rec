@@ -1,6 +1,6 @@
 """후보 수별 효과 분석 (모델 재학습·조정 없음, 이미 채점된 결과만 다시 나눠 봄).
 
-'평균 최대' 대비 1차 Risk-Aware 의 극혐 감소를, 그룹당 후보 영화 수 구간별로 계산 -> figures/fig8_by_candidates.png
+'평균 최대' 대비 1차 Risk-Aware 의 Strong Dislike 감소를, 그룹당 후보 영화 수 구간별로 계산 -> figures/fig8_by_candidates.png
 사용 데이터: 새 시험지 1·2·3번 (1차는 세 시험지 모두를 보기 전에 고정됨).
 """
 import sys

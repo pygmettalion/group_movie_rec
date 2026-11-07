@@ -76,7 +76,7 @@ print("\n", base_df.round(4).to_string(index=False))
 final = dict(
     frozen_note="이 파일이 저장된 뒤에는 어떤 값도 바꾸지 않는다. Test/External Test 는 이 설정으로 한 번만 채점.",
     stage1=s1sel, stage2=s2sel, lam=lam_star,
-    lambda_rule="공식49+추가 연습 그룹 전체에서 balanced_score=(평균만족+최저만족+(1-극혐률))/3 최대, 동점이면 작은 lambda",
+    lambda_rule="공식49+추가 연습 그룹 전체에서 balanced_score=(평균만족+최저만족+(1-Strong Dislike 비율))/3 최대, 동점이면 작은 lambda",
     n_lambda_groups=len(all_cases),
     test_refit_note="Test 채점 전, 고정된 하이퍼파라미터 그대로 Stage 1 을 Train+Validation 으로 다시 학습 "
                     "(설정은 그대로, 시험 직전까지의 기록으로 공부 범위만 늘림). Risk 분류기와 lambda 는 그대로.",

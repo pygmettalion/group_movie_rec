@@ -5,9 +5,9 @@
   - 인기순 (Popular): 과거에 가장 많이 본 영화
   - 평점순 (Top-rated): 과거 평균 별점이 가장 높은 영화 (평점 적은 영화는 전체 평균 쪽으로 당김)
   - 평균 최대 (Average): 4명 예측 평균이 가장 높은 영화 = '최고 기준'에만 맞추는 일반적인 그룹 추천
-  - 우리 모델 (Risk-Aware, 1차 고정): 평균 - 0.75 x 극혐 위험
+  - 우리 모델 (Risk-Aware, 1차 고정): 평균 - 0.75 x Strong Dislike 위험
 채점: 1번·2번 새 시험지 1,000그룹 (1차는 둘 다 보기 전에 고정됨).
-핵심 지표: '아무도 극혐하지 않은 비율'(= 1 - Strong Dislike 발생률), 최저 만족도. 평균 만족도는 함께 확인.
+핵심 지표: '아무도 강하게 싫어하지 않은 비율'(= 1 - Strong Dislike 발생률), 최저 만족도. 평균 만족도는 함께 확인.
 """
 import json
 import pickle
@@ -37,7 +37,7 @@ mean = trva.groupby("movie_id").rating_norm.agg(["sum", "count"])
 top_rated = (mean["sum"] + 20 * trva.rating_norm.mean()) / (mean["count"] + 20)
 
 def awm(pred, thr):
-    """Average Without Misery: 누군가의 '예측 점수'가 자기 극혐선 이하인 영화는 빼고 평균 1등. 다 빠지면 평균 1등."""
+    """Average Without Misery: 누군가의 '예측 점수'가 자기 불호 기준선 이하인 영화는 빼고 평균 1등. 다 빠지면 평균 1등."""
     ok = (pred > thr[None, :]).all(1)
     m = pred.mean(1)
     return int(np.argmax(np.where(ok, m, -np.inf))) if ok.any() else int(np.argmax(m))

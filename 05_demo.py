@@ -83,10 +83,10 @@ out = out.sort_values("final_score", ascending=False).reset_index(drop=True)
 out.to_csv(RESULTS / f"demo_group{gid}.csv", index=False)
 
 pd.set_option("display.width", 200)
-print(f"\nlambda = {final['lam']}  (Final = 예상만족 - lambda x 극혐위험)")
+print(f"\nlambda = {final['lam']}  (Final = 예상만족 - lambda x Strong Dislike 위험)")
 print(out.head(5).round(3).to_string())
 avg_pick = out.loc[out.expected_satisfaction.idxmax()]
 print(f"\n최종 추천: movie {int(out.movie_id[0])} {out.title[0]} ({out.genres[0]})  예상만족 {out.expected_satisfaction[0]:.3f}, "
-      f"극혐위험 {out.misery_risk[0]:.3f}")
+      f"Strong Dislike 위험 {out.misery_risk[0]:.3f}")
 print(f"참고 - 평균만 봤다면: movie {int(avg_pick.movie_id)} {avg_pick.title} ({avg_pick.genres})  예상만족 "
-      f"{avg_pick.expected_satisfaction:.3f}, 극혐위험 {avg_pick.misery_risk:.3f}")
+      f"{avg_pick.expected_satisfaction:.3f}, Strong Dislike 위험 {avg_pick.misery_risk:.3f}")

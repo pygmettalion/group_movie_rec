@@ -1,4 +1,4 @@
-"""Stage 2 도구: Strong Dislike 기준과 Group Risk(그룹 내 '극혐' 위험) 피처.
+"""Stage 2 도구: Strong Dislike 기준과 Group Risk(그룹 내 'Strong Dislike' 위험) 피처.
 
 Strong Dislike (개인별 상대 기준)
   - 사람마다 별점 습관이 다르다. 짠돌이는 3점도 '별로', 후한 사람은 3점이면 '최악'일 수 있다.
@@ -20,9 +20,9 @@ def user_thresholds(hist, p):
 
     별점은 1,2,3,4,5 처럼 띄엄띄엄이라 같은 점수가 많다(동점).
     보통의 백분위 공식(q_p 이하)을 쓰면 '하위 5%' 라고 해 놓고 실제로는 그 사람 평점의 14% 가 걸린다(데이터로 확인).
-    그래서 '그 점수 이하가 그 사람 평점의 p% 를 넘지 않는 가장 높은 점수' 를 극혐선으로 쓴다.
-    (가장 낮은 점수 하나만으로도 p% 를 넘는 사람은 그 가장 낮은 점수를 극혐선으로 둔다.)
-    share = 과거 평점 중 극혐선 이하 비율(그 사람이 '극혐'을 얼마나 자주 주는지).
+    그래서 '그 점수 이하가 그 사람 평점의 p% 를 넘지 않는 가장 높은 점수' 를 불호 기준선으로 쓴다.
+    (가장 낮은 점수 하나만으로도 p% 를 넘는 사람은 그 가장 낮은 점수를 불호 기준선으로 둔다.)
+    share = 과거 평점 중 불호 기준선 이하 비율(그 사람이 'Strong Dislike'를 얼마나 자주 주는지).
     """
     cnt = hist.groupby(["user_id", "rating_norm"]).size().rename("n").reset_index()
     cnt["cum"] = cnt.groupby("user_id").n.cumsum() / cnt.groupby("user_id").n.transform("sum")
@@ -56,7 +56,7 @@ FEATURE_SETS = {
 
 
 def group_features(pred, thr, share, movie_ids, mstats):
-    """pred/thr/share: (그룹-영화 수, 4) 배열. margin = 예측점수 - 그 사람의 극혐선 (음수면 위험)."""
+    """pred/thr/share: (그룹-영화 수, 4) 배열. margin = 예측점수 - 그 사람의 불호 기준선 (음수면 위험)."""
     pred, thr, share = map(lambda a: np.asarray(a, float), (pred, thr, share))
     margin = pred - thr
     f = pd.DataFrame({
@@ -71,7 +71,7 @@ def group_features(pred, thr, share, movie_ids, mstats):
     return f
 
 
-# 개인 단위 위험 모델용 (추가 후보 구조): 한 사람-한 영화마다 '극혐 확률'을 구한다.
+# 개인 단위 위험 모델용 (추가 후보 구조): 한 사람-한 영화마다 'Strong Dislike 확률'을 구한다.
 INDIV_FEATURES = ["pred", "thr", "margin", "share", "m_logcount", "m_mean", "m_std", "m_lowfrac"]
 
 

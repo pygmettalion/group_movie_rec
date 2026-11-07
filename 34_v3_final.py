@@ -1,7 +1,7 @@
 """[3차] 최종 채점: 2번 새 시험지(FRESH_HOLDOUT2, 500그룹, 1번 시험지와 사람이 안 겹침)로 1·2·3차를 한 번씩.
 
 각 버전은 자기 고정 설정(results_v1_frozen / results_v2 / results_v3)을 그대로 쓴다.
-극혐 판정 잣대는 각 버전이 고른 percentile 들로 모두 계산해서 같은 잣대로 비교한다.
+Strong Dislike 판정 잣대는 각 버전이 고른 percentile 들로 모두 계산해서 같은 잣대로 비교한다.
 실행: python 34_v3_final.py
 """
 import json
@@ -88,7 +88,7 @@ for eval_p in PS:
              ("v1", "Final", "v1", "Average"), ("v1", "Final", "v1", "LeastMisery"), ("v3", "Final", "v2", "Final")]
     boot = {f"{a}{b} - {c}{d}": paired_bootstrap(per[(a, b)], per[(c, d)]) for a, b, c, d in comps}
     results[f"p{eval_p}"] = dict(table=tab.to_dict("records"), bootstrap=boot)
-    print(f"\n[2번 새 시험지 {len(holdout)}그룹 | 극혐 잣대 하위 {eval_p}%]\n", tab.round(4).to_string(index=False))
+    print(f"\n[2번 새 시험지 {len(holdout)}그룹 | Strong Dislike 잣대 하위 {eval_p}%]\n", tab.round(4).to_string(index=False))
     for k, v in boot.items():
         print(f"  {k}: " + ", ".join(f"{m} {d['diff']:+.4f} [{d['lo']:+.4f},{d['hi']:+.4f}]" for m, d in v.items()))
     pd.concat([df.assign(version=k[0], method=k[1]) for k, df in per.items()]).to_csv(OUT / f"FRESH2_per_group_p{eval_p}.csv", index=False)

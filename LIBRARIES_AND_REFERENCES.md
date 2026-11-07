@@ -71,7 +71,7 @@
 | 편향 포함 MF (SGD, ALS) | `src/models.py` | 예측 = 전체평균 + 사용자편향 + 영화편향 + 사용자좌표·영화좌표. ALS 는 한쪽 고정 후 릿지 회귀로 번갈아 풂 (규제 = reg × 평점 수) |
 | Fold-in | `src/models.py` `MF.fold_in` | 새 사용자(MovieTweetings, Beliefs)의 좌표를 영화 좌표 고정 상태로 릿지 회귀로 계산 |
 | 장르 Content 모델 | `src/models.py` `ContentModel` | 사용자 평균(전체 평균 쪽으로 당김) + 사람별 장르 가중치(전체 공통 가중치 쪽으로 당김) |
-| 동점 고려 극혐선 | `src/risk.py` `user_thresholds` | '그 점수 이하가 그 사람 평점의 p% 를 넘지 않는 가장 높은 점수' |
+| 동점 고려 불호 기준선 | `src/risk.py` `user_thresholds` | '그 점수 이하가 그 사람 평점의 p% 를 넘지 않는 가장 높은 점수' |
 | 그룹 위험 | `src/group.py` | 1 − ∏(1 − pᵢ) |
 | 짝지은 부트스트랩 | `src/group.py` `paired_bootstrap` | 같은 그룹에서 두 방법의 차이를 5,000번 다시 뽑아 95% 구간 계산 |
 | Item-kNN | `src/knn.py` | 기준 점수 + 비슷한 영화 k개의 '취향 나머지' 가중평균 |

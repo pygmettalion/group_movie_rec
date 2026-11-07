@@ -3,7 +3,7 @@
 (가) 새 시험지(FRESH_HOLDOUT, 봉인된 500그룹): 1차 고정 모델 vs 2차 고정 모델 -> 공정한 비교 (주 결과)
 (나) 기존 Internal / External / Beliefs: 2차 모델 점수 (참고용. 1차 결과를 본 뒤 만든 모델이라 '보조 결과'로만 보고)
 
-'극혐' 기준(percentile)이 1차와 2차에서 다를 수 있으므로, 극혐 발생률은 두 기준 모두로 계산해서 같은 잣대로 비교한다.
+'Strong Dislike' 기준(percentile)이 1차와 2차에서 다를 수 있으므로, Strong Dislike 발생률은 두 기준 모두로 계산해서 같은 잣대로 비교한다.
 실행: python 14_v2_final.py   (results_v1_frozen 과 results_v2 를 읽는다)
 """
 import json
@@ -54,7 +54,7 @@ def risk_of(name, pred, users, movies, th):
 
 
 def ml_cases(name, group_list, eval_p):
-    """eval_p: 극혐 판정 기준 percentile (채점 잣대). 모델 내부 위험 계산은 각 버전 자기 percentile."""
+    """eval_p: Strong Dislike 판정 기준 percentile (채점 잣대). 모델 내부 위험 계산은 각 버전 자기 percentile."""
     out = []
     for gid, users, movies in group_list:
         pred = np.column_stack([V[name]["s1"].predict([u] * len(movies), movies) for u in users])
@@ -92,7 +92,7 @@ for eval_p in PS:
         "v2 Average - v1 Average": paired_bootstrap(per[("v2", "Average")], per[("v1", "Average")]),
     }
     results[f"fresh_p{eval_p}"] = dict(table=tab.to_dict("records"), bootstrap=boot)
-    print(f"\n[새 시험지 {len(fresh_list)}그룹 | 극혐 잣대 = 하위 {eval_p}%]\n", tab.round(4).to_string(index=False))
+    print(f"\n[새 시험지 {len(fresh_list)}그룹 | Strong Dislike 잣대 = 하위 {eval_p}%]\n", tab.round(4).to_string(index=False))
     for k, v in boot.items():
         print(f"  {k}: " + ", ".join(f"{m} {d['diff']:+.4f} [{d['lo']:+.4f},{d['hi']:+.4f}]" for m, d in v.items()))
     pd.concat([df.assign(version=k[0]) for k, df in per.items()]).to_csv(OUT / f"FRESH_per_group_p{eval_p}.csv", index=False)

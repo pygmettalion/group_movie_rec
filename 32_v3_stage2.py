@@ -1,4 +1,4 @@
-"""[3차 버전] 극혐 기준 + 위험 모델 다시 고르기 (3차 Stage 1 예측으로 다시 학습) — Validation 으로만.
+"""[3차 버전] Strong Dislike 기준 + 위험 모델 다시 고르기 (3차 Stage 1 예측으로 다시 학습) — Validation 으로만.
 
 1차와 같은 절차(가짜 그룹, 영화 단위 5-fold, 같은 선택 규칙)에
 새 피처 조합(I_meta, I_gd, I_meta_gd)을 후보로 추가했다. 1차 피처(I_member)도 후보에 그대로 있다.
@@ -101,7 +101,7 @@ for p in PERCENTILES:
         base = y.mean()
         for fs, feats in INDIV_V2_SETS.items():
             if alpha != ALPHAS[0] and "u_gdis" not in feats:
-                continue   # alpha 는 장르 극혐 피처에만 영향
+                continue   # alpha 는 장르 Strong Dislike 피처에만 영향
             for cname, make in CLASSIFIERS.items():
                 oof = np.zeros(len(y))
                 for f in range(5):

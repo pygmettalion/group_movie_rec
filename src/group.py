@@ -2,12 +2,12 @@
 
 Final Score = Expected Group Satisfaction - lambda * Predicted Group Misery Risk
   - Expected Group Satisfaction: 4명의 예측 선호 점수 평균
-  - Predicted Group Misery Risk: Stage 2 분류기가 낸 '누군가 극혐할 확률'
+  - Predicted Group Misery Risk: Stage 2 분류기가 낸 '누군가 강하게 싫어할 확률'
 
 채점(정답 공개 후)
   - 평균 만족도: 추천된 영화에 4명이 실제로 준 점수(0~1)의 평균
   - 최저 만족도: 4명 중 가장 낮게 준 사람의 점수
-  - Strong Dislike 발생: 4명 중 한 명이라도 자기 극혐선 이하 점수를 줬는가
+  - Strong Dislike 발생: 4명 중 한 명이라도 자기 불호 기준선 이하 점수를 줬는가
 """
 import numpy as np
 import pandas as pd

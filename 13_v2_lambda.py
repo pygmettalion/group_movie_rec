@@ -67,6 +67,6 @@ pd.DataFrame(base).to_csv(RESULTS / "stage3_validation_methods.csv", index=False
 print(pd.DataFrame(base).round(4).to_string(index=False))
 save_json(dict(version="v2", frozen_note="2차 버전 고정. 새 시험지(FRESH_HOLDOUT)로 1차와 함께 한 번만 채점.",
                stage1=s1sel, stage2=s2sel, lam=lam_star, n_lambda_groups=len(cases),
-               lambda_rule="balanced_score=(평균만족+최저만족+(1-극혐률))/3 최대, 동점이면 작은 lambda"),
+               lambda_rule="balanced_score=(평균만족+최저만족+(1-Strong Dislike 비율))/3 최대, 동점이면 작은 lambda"),
           "FINAL_FROZEN_CONFIG.json")
 print("2차 모델 고정 완료")

@@ -12,7 +12,7 @@
 무엇을 비교하나?
   - Strong Dislike percentile 후보: 5, 10, 15, 20, 25
   - 분류기: Logistic Regression / HistGradientBoosting / RandomForest (각각 몇 가지 설정)
-  - 피처 조합: F1(예측점수만) / F2(+개인 극혐선과의 거리) / F3(+영화 과거 평점 통계)
+  - 피처 조합: F1(예측점수만) / F2(+개인 불호 기준선과의 거리) / F3(+영화 과거 평점 통계)
   - 채점: 영화 단위로 나눈 5-fold 교차검증 (같은 영화가 학습/채점에 동시에 들어가지 않게)
 
 선택 규칙 (결과를 보기 전에 정해 둠)
@@ -135,7 +135,7 @@ search, per_p = [], {}
 for p in PERCENTILES:
     X, y, indiv = build(pg, p)
     base = y.mean()
-    print(f"\n=== percentile {p}: 개인 극혐 비율 {indiv:.3f}, 그룹 위험 비율(1명 이상) {base:.3f}")
+    print(f"\n=== percentile {p}: 개인 Strong Dislike 비율 {indiv:.3f}, 그룹 위험 비율(1명 이상) {base:.3f}")
     rule_auc = roc_auc_score(y, X["n_below"] - 1e-3 * X["margin_min"])
 
     def record(structure, fs, cname, oof):
@@ -148,7 +148,7 @@ for p in PERCENTILES:
         print(f"  {structure:6s} {fs:15s} {cname:24s} logloss {row['logloss']:.4f}  AUC {row['auc']:.4f}  "
               f"PR-AUC {row['pr_auc']:.4f}")
 
-    # (가) 그룹 분류기: 4명을 한 번에 보고 '누군가 극혐' 확률을 바로 예측
+    # (가) 그룹 분류기: 4명을 한 번에 보고 '누군가 Strong Dislike' 확률을 바로 예측
     for (fs, feats), (cname, make) in itertools.product(FEATURE_SETS.items(), CLASSIFIERS.items()):
         oof = np.zeros(len(y))
         for f in range(5):
@@ -157,7 +157,7 @@ for p in PERCENTILES:
             oof[b] = clf.predict_proba(X.loc[b, feats])[:, 1]
         record("group", fs, cname, oof)
 
-    # (나) 개인 분류기: 한 명씩 '극혐 확률' p_i 를 구한 뒤 1-(1-p1)(1-p2)(1-p3)(1-p4) 로 합침
+    # (나) 개인 분류기: 한 명씩 'Strong Dislike 확률' p_i 를 구한 뒤 1-(1-p1)(1-p2)(1-p3)(1-p4) 로 합침
     Xi, yi, Xg = build_indiv(p)
     for cname, make in INDIV_CLASSIFIERS.items():
         oof = np.zeros(len(y))
