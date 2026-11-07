@@ -1,0 +1,22 @@
+﻿Movie Recommendation 팀 데이터
+
+01_MovieLens_1M · 주 모델 개발
+- ratings.csv에서 split=train으로 학습, validation으로 설정 선택, test로 최종 채점한다.
+- eval_groups.csv는 검증·테스트용 4인 그룹 49개와 구간별 공통 영화 목록이다.
+
+02_MovieTweetings · 외부 평가
+- movietweetings_ratings.csv의 split=history는 예측에 쓰는 과거 평점, split=test는 채점용 실제 평점 916건이다.
+- movietweetings_test_groups.csv는 44개 4인 그룹과 평가 후보 영화 목록이다.
+- 연결이 확인된 영화는 두 CSV 모두 movie_id에 MovieLens 번호를 사용한다. 연결되지 않은 과거 영화는 원본 IMDb 번호(tt...)로 구분한다. 테스트 영화는 모두 MovieLens 번호로 바꿨다.
+- Item-based CF는 MovieLens train에서 만든 영화 간 유사도를 사용한다. 외부 예측에는 history 중 MovieLens 번호가 있는 영화의 과거 평점을 사용하고, test 별점은 순위가 나온 뒤 채점한다.
+- 콘텐츠 모델의 사용자 선호와 개인별 불호 기준은 각 사용자의 history에서 계산할 수 있다.
+
+03_Beliefs · 미시청 영화의 개인 선호 검증
+- unseen_test.csv는 정제한 미시청 응답 25,360건이다. 응답보다 앞선 실제 평점이 없는 120건은 제외했다. rating_raw는 사용자가 관람 전에 예상한 별점이다.
+- past_history.csv는 테스트 응답에 등장하는 사용자가 과거에 실제로 남긴 평점이다. split=history로 표시했다. 사용자·영화·시각·점수가 같은 중복 29,667행을 제거했다.
+- 사용자 이력을 쓰는 모델은 unseen_test.csv의 각 행에 대해 같은 user_id의 기록 중 timestamp가 응답 시각보다 작은 평점만 사용한다.
+- unseen_test.csv의 rating_raw는 관람 전 예상 별점이다. 과거 실제 평점에 섞지 않고 채점할 때만 사용한다.
+- 세 평가 평점 CSV의 열 구조는 전달용 샘플과 같다. Beliefs의 원래 예상 별점으로 오차를 계산할 때는 rating_raw를 사용한다.
+
+영화 ID 매핑표는 02_MovieTweetings/movie_id_crosswalk.csv에 있다.
+전처리 코드는 prepare_team_data.py이며, --help로 원본 파일과 결과 폴더를 지정하는 방법을 확인할 수 있다.
