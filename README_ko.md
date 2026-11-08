@@ -72,6 +72,7 @@ python 07_why_ours.py && python 08_make_plots.py && python 09_by_candidates.py  
 | `src/models.py` | MF(SGD), ALSMF, ContentModel, Stage1Predictor |
 | `src/risk.py` | 불호 기준선, 위험 피처 |
 | `src/group.py` | 최종 점수, 그룹 채점, 짝지은 부트스트랩 |
+| `frontend/` | 발표용 데모 페이지 (`index.html`을 더블클릭하면 열림. 데이터는 `build_data.py`가 고정된 1차 모델로 생성) |
 | `korean_comments/` | 같은 코드에 한국어 주석을 단 읽기용 사본 (팀원용, 실행 코드는 동일. 루트 코드는 영어 주석) |
 
 **추가 실험 (최종 모델 아님, 결과는 각 폴더)**
