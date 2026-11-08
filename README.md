@@ -72,6 +72,7 @@ python 07_why_ours.py && python 08_make_plots.py && python 09_by_candidates.py  
 | `src/models.py` | MF (SGD), ALSMF, ContentModel, Stage1Predictor |
 | `src/risk.py` | Strong Dislike threshold, risk features |
 | `src/group.py` | Final score, group scoring, paired bootstrap |
+| `frontend/` | Demo page for the presentation (`index.html`, opens by double-click; data built from the frozen v1 model by `build_data.py`) |
 | `korean_comments/` | Read-only copy of the same code with the original Korean comments (for teammates; executable code identical) |
 
 **Additional experiments (not the final model; results in each folder)**
